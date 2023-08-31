@@ -1,6 +1,5 @@
 /data/*
-!data/pdf/.gitkeep
-!data/word/.gitkeep
+!data/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
