@@ -1,8 +1,10 @@
 import uuid
 from typing import List, Union
 import aiofiles
+import os
  
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.llm import llm_answer
@@ -25,7 +27,12 @@ class User(BaseModel):
     user_name: str
     contexts: Union[list, None] = []
     questions: Union[List[Question], None] = []
- 
+
+
+class MessageError(BaseModel):
+    message: str
+    details: dict
+
  
 app = FastAPI()
  
@@ -40,42 +47,59 @@ async def get_all_users_info():
  
 @app.get("/users/{user_id}")
 async def get_user_info(user_id: str):
-    results = {"user": users[user_id]}
-    return results
+    return users[user_id]
  
  
-@app.post("/create_user")
+@app.post("/create_user", status_code=201, responses={status.HTTP_201_CREATED: {"model": User, "description": "Creates and returns User",}})
 async def add_user(user_name: str = 'Ivan'):
     new_user_uuid = str(uuid.uuid4())
+    user = User(user_id=new_user_uuid, user_name=user_name)
+
     # FIXME: request to database - create user
-    users[new_user_uuid] = User(
-        user_id=new_user_uuid,
-        user_name=user_name
-    )
-    return {
-        'response_code': 200,
-        'user_uuid': str(new_user_uuid)
-    }
+    users[new_user_uuid] = user
+
+    return user
  
  
-@app.post("/{user_id}/add_context")
-async def add_document(user_id: str, doc_name: str, user_file: UploadFile = File(...)):
+@app.post("/{user_id}/add_context", responses={status.HTTP_404_NOT_FOUND: {"model": MessageError}})
+async def add_document(user_id: str, user_file: UploadFile = File(...)):
     # FIXME: request to database - add context (filename or filename1_filename2_... or different)
     # FIXME: Multiple files ??
-    async with aiofiles.open(user_file.filename, "wb") as file:
-        contents = await user_file.read()
-        await file.write(contents)
-    users[user_id].contexts.append(pdf.filename)
-    return {
-        'response_code': 200,
-        'doc_name': f'{pdf.filename}',
-        'from_uuid': user_id
-    }
+    if user_id not in users:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            content={
+                'message': 'uuid not found', 
+                'details': {"uuid": user_id}
+            }
+        )
+    
+    user = users[user_id]
+
+    # FIXME: Store files properly ?
+    path = os.path.join(os.getcwd(), 'data', user_file.filename)
+    if not os.path.isfile(path):
+        async with aiofiles.open(path, "wb") as file:
+            contents = await user_file.read()
+            await file.write(contents)
+
+    user.contexts.append(user_file.filename)
+
+    return user
  
  
-@app.post("/{user_id}/{context}/ask_question")
+@app.post("/{user_id}/{context}/ask_question", responses={status.HTTP_404_NOT_FOUND: {"model": MessageError}})
 async def ask_question(user_id: str, question: Question):
     # FIXME: request ti database - add question to database
+    if user_id not in users:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            content={
+                'message': 'uuid not found', 
+                'details': {"uuid": user_id}
+            }
+        )
+    
     users[user_id].questions.append(question)
 
     # FIXME: request to database - add llm answer to database
@@ -86,12 +110,11 @@ async def ask_question(user_id: str, question: Question):
         documents=docs_used
     )
     
-    return {
-        'response_code': 200,
-        'answer': answer
-    }
+    return answer
  
  
-if __name__ == '__main__':
-    u = User(user_id='1234', user_name='4321')
-    print(u)
+if __name__ == "__main__":
+    import uvicorn
+
+
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
