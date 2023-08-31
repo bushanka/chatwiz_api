@@ -14,7 +14,6 @@ class Question(BaseModel):
     context: str
     text: str
  
- 
 class Answer(BaseModel):
     question: Question
     answer_text: str
@@ -33,6 +32,11 @@ class MessageError(BaseModel):
     message: str
     details: dict
 
+
+class AddedContext(BaseModel):
+    contexts: Union[list, None] = []
+    user_id: str
+
  
 app = FastAPI()
  
@@ -50,7 +54,9 @@ async def get_user_info(user_id: str):
     return users[user_id]
  
  
-@app.post("/create_user", status_code=201, responses={status.HTTP_201_CREATED: {"model": User, "description": "Creates and returns User",}})
+@app.post("/create_user", status_code=201, responses={
+    status.HTTP_201_CREATED: {"model": User, "description": "Creates and returns User"},
+})
 async def add_user(user_name: str = 'Ivan'):
     new_user_uuid = str(uuid.uuid4())
     user = User(user_id=new_user_uuid, user_name=user_name)
@@ -61,7 +67,10 @@ async def add_user(user_name: str = 'Ivan'):
     return user
  
  
-@app.post("/{user_id}/add_context", responses={status.HTTP_404_NOT_FOUND: {"model": MessageError}})
+@app.post("/{user_id}/add_context", responses={
+    status.HTTP_404_NOT_FOUND: {"model": MessageError},
+    status.HTTP_200_OK: {"model": AddedContext}
+})
 async def add_document(user_id: str, user_file: UploadFile = File(...)):
     # FIXME: request to database - add context (filename or filename1_filename2_... or different)
     # FIXME: Multiple files ??
@@ -85,10 +94,17 @@ async def add_document(user_id: str, user_file: UploadFile = File(...)):
 
     user.contexts.append(user_file.filename)
 
-    return user
+    return AddedContext(
+        contexts=user.contexts,
+        user_id=user.user_id
+        
+    )
  
  
-@app.post("/{user_id}/{context}/ask_question", responses={status.HTTP_404_NOT_FOUND: {"model": MessageError}})
+@app.post("/{user_id}/{context}/ask_question", responses={
+    status.HTTP_404_NOT_FOUND: {"model": MessageError},
+    status.HTTP_200_OK: {"model": Answer}
+})
 async def ask_question(user_id: str, question: Question):
     # FIXME: request ti database - add question to database
     if user_id not in users:
