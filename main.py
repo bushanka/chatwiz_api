@@ -1,5 +1,6 @@
 import uuid
 from typing import List, Union
+import aiofiles
  
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
@@ -44,26 +45,32 @@ async def get_user_info(user_id: str):
  
  
 @app.post("/create_user")
-async def add_user(user_name: str = 'Иван'):
+async def add_user(user_name: str = 'Ivan'):
     new_user_uuid = str(uuid.uuid4())
     # FIXME: request to database - create user
     users[new_user_uuid] = User(
         user_id=new_user_uuid,
         user_name=user_name
     )
-    return {'response_code': 200,
-            'user_uuid': str(new_user_uuid)}
+    return {
+        'response_code': 200,
+        'user_uuid': str(new_user_uuid)
+    }
  
  
 @app.post("/{user_id}/add_context")
-async def add_document(user_id: str, doc_name: str, pdf: UploadFile = File(...)):
-    # FIXME: request to database - add context (filename or filename1_filename2_...)
-    with open(pdf.filename, "wb") as file:
-        contents = await pdf.read()
-        file.write(contents)
+async def add_document(user_id: str, doc_name: str, user_file: UploadFile = File(...)):
+    # FIXME: request to database - add context (filename or filename1_filename2_... or different)
+    # FIXME: Multiple files ??
+    async with aiofiles.open(user_file.filename, "wb") as file:
+        contents = await user_file.read()
+        await file.write(contents)
     users[user_id].contexts.append(pdf.filename)
-    return {'response_code': 200,
-            'message': f'Document {pdf.filename} has been added by {user_id}'}
+    return {
+        'response_code': 200,
+        'doc_name': f'{pdf.filename}',
+        'from_uuid': user_id
+    }
  
  
 @app.post("/{user_id}/{context}/ask_question")
@@ -79,8 +86,10 @@ async def ask_question(user_id: str, question: Question):
         documents=docs_used
     )
     
-    return {'response_code': 200,
-            'answer': answer}
+    return {
+        'response_code': 200,
+        'answer': answer
+    }
  
  
 if __name__ == '__main__':
