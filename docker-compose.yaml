@@ -1,0 +1,41 @@
+version: "3.9"
+services:
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: "linkup"
+      POSTGRES_USER: "some_user"
+      POSTGRES_PASSWORD: "111"
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+#  migrations:
+#        command: bash -c "cd app/database && alembic upgrade head && cd ../.. && python app/main.py"
+#    command: bash -c "alembic upgrade head"
+#        volumes:
+#          - .:/code
+#    ports:
+#      - "5000:5000"
+#    depends_on:
+#      - db
+
+
+#  pg_migrations:
+#    build: .
+#    volumes:
+#      - .:/root/code
+#    command: /bin/sh -c "python3 -m alembic upgrade head" # upgrade all migration
+#    # command: /bin/sh -c "ls" # upgrade all migration
+#    # command: /bin/sh -c "cd code && alembic downgrade e2864b901567" # test one downgrade migration
+#    # command: /bin/sh -c "cd code && alembic downgrade -1 " # dawngrade all migrations
+#    depends_on:
+#      pg:
+#        condition: service_healthy
+#    env_file:
+#      - .env
+
+volumes:
+  pgdata:
