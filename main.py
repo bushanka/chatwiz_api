@@ -4,10 +4,17 @@ import aiofiles
 import os
  
 from fastapi import FastAPI, File, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from src.llm import llm_answer
+
+from yookassa import Configuration, Payment
+import uuid
+
+Configuration.account_id = '252962'
+Configuration.secret_key = 'test_88ebn3FSZvhXNwCbOkaHJmYQX1arNGx2H0QzU2Yxqn8'
  
  
 class Question(BaseModel):
@@ -39,10 +46,67 @@ class AddedContext(BaseModel):
 
  
 app = FastAPI()
- 
+
+origins = [
+    "http://www.growth-tech.ru",  # Add your website's origin(s) here
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 users: dict[str, User] = {}
+
+plan_dict = {
+    '1': "300.00",
+    '2': "800.00",
+    '3': "1500.00"
+}
+
+class SubscriptionPlan:
+    id: int
+    price: float
+    max_num_of_contexts: int
+    max_size_of_context: float
+    max_question_length_in_chars: int
+    max_number_of_chats: int
+    max_number_of_queries: int
+    duration: int  # в сек
+
+
+@app.post("/billing/{user_id}/{plan_id}")
+async def process_payment(user_id, plan_id):
+    indepotence_key = uuid.uuid4()
+    value = plan_dict[plan_id]
+
+    payment = Payment.create({
+        "amount": {
+            "value": value,
+            "currency": "RUB"
+        },
+        "confirmation": {
+            # После усппешной оплаты юзера редиректит в прописанный url
+            # если используем виджет - поставить 
+            "type": "embedded",
+        },
+        "capture": True,
+        # Описание платежа, до 128 символов
+        "description": f"Заказ создан юзером {user_id}, план: {plan_id}",
+        # Сохраняем его метод оплаты, если юзер дал на это разрешение
+        "save_payment_method": True
+    }, indepotence_key)
+
+    return {
+        "user_id": user_id,
+        "plan_id": plan_id,
+        "value": value,
+        "confirmation_token": payment.confirmation.confirmation_token
+    }
  
- 
+
 @app.get("/users/")
 async def get_all_users_info():
     results = {"users": users}
