@@ -1,5 +1,5 @@
+from email_validator import ValidatedEmail
 from pydantic import BaseModel, ConfigDict
-from email_validator import validate_email, ValidatedEmail
 
 
 class SignUpUser(BaseModel):
