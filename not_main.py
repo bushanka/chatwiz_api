@@ -1,10 +1,3 @@
-import uuid
-from yookassa import Configuration, Payment
-
-Configuration.account_id = '<Идентификатор магазина>'
-Configuration.secret_key = '<Секретный ключ>'
-
-
 def reg_user(email, passwords, name, surname) -> sucsess_or_error:  # 3
     """
     При успехе создания, отправляем письмо с подтверждением + заводим дурика в базу с уникальным токеном
@@ -98,27 +91,34 @@ def purchase_subscription(authorised_user_token, subscription_id) -> sucsess_or_
 
 
     # 1. Создаем платеж
+    from yookassa import Configuration, Payment
+    import uuid
+
+    Configuration.account_id = '252962'
+    Configuration.secret_key = 'test_88ebn3FSZvhXNwCbOkaHJmYQX1arNGx2H0QzU2Yxqn8'
+    indepotence_key = uuid.uuid4()
     payment = Payment.create({
         "amount": {
             "value": "100.00",
             "currency": "RUB"
         },
-        # FIXME: нужно для сохранения метода платежа - для подписки
-        "payment_method_data": {
-            "type": "bank_card"
-        },
+        # # FIXME: нужно для сохранения метода платежа - для подписки
+        # "payment_method_data": {
+        #     "type": "bank_card"
+        # },
         "confirmation": {
             # После усппешной оплаты юзера редиректит в прописанный url
-            "type": "redirect",
-            "return_url": "https://www.example.com/return_url"
+            # если используем виджет - поставить 
+            "type": "embedded",
         },
         "capture": True,
         # Описание платежа, до 128 символов
         "description": "Заказ №1",
         # Сохраняем его метод оплаты, если юзер дал на это разрешение
         "save_payment_method": True
-    }, uuid.uuid4())
-    # uuid тут это ключ идемпотентности - если вновь сделать такой же запрос с этим же ключем - 2 раза списаний не будет
+    }, indepotence_key)
+    print()
+    # это ключ идемпотентности - если вновь сделать такой же запрос с этим же ключем - 2 раза списаний не будет
 
 
     # 2. По идее payment будет иметь такую стрктуру (ответ от API юкассы):
