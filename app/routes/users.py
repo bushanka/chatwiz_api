@@ -36,7 +36,7 @@ async def get_users() -> user.AuthorisedUsersInfo:
     '/{user_id}',
     responses={
         status.HTTP_200_OK: {
-            'model': user.AuthorisedUserInfo(),
+            'model': user.AuthorisedUserInfo,
             'description': "Return user by user_id"
         }
     }
