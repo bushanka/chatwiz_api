@@ -1,13 +1,17 @@
 from fastapi import FastAPI
 
-from .routes import users, chats
+from .routes import (
+    users, 
+    chats, 
+    billing
+)
 
 
 app = FastAPI()
 
 
 app.include_router(users.router)
-app.include_router(chats.router)
+app.include_router(billing.router)
 
 
 
