@@ -10,10 +10,14 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-os.environ['db_user'] = 'some_user'
-os.environ['db_password'] = '111'
-os.environ['db_host'] = '127.0.0.1'
-os.environ['db_name'] = 'linkup'
+# os.environ['db_user'] = 'some_user'
+os.environ['db_user'] = 'postgres'
+# os.environ['db_password'] = '111'
+os.environ['db_password'] = '11111111'
+# os.environ['db_host'] = '127.0.0.1'
+os.environ['db_host'] = '51.250.50.13'
+# os.environ['db_name'] = 'linkup'
+os.environ['db_name'] = 'postgres'
 conn_url = f'postgresql+psycopg2://{os.environ["db_user"]}:{os.environ["db_password"]}@{os.environ["db_host"]}/{os.environ["db_name"]}'
 
 config.set_main_option('sqlalchemy.url', conn_url)
