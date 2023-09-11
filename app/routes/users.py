@@ -1,13 +1,10 @@
 from fastapi import APIRouter, status
-# from logging.config import dictConfig
 from ..models import user
-# from ..logs.config.logconfig import LogConfig
 
-# import logging
+import logging
 
 
-# dictConfig(LogConfig().model_dump())
-# logger = logging.getLogger("chatwiz")
+logger = logging.getLogger("uvicorn")
 
 router = APIRouter(
     prefix="/users",
@@ -24,10 +21,31 @@ router = APIRouter(
             },
         }
 )
-async def get_users() -> user.AuthorisedUserInfo:
+async def get_users() -> user.AuthorisedUsersInfo:
     # FIXME: Request to db via ORM to get users
     users = [
-        user.AuthorisedUserInfo(name='Sasha', surename='Bush', email='bushanka2805@gmail.com'),
-        user.AuthorisedUserInfo(name='Kirill', surename='Vasyurin', email='kirillich2912@gmail.com')
+        user.AuthorisedUserInfo(name='Sasha', surname='Bush', email='bushanka2805@gmail.com'),
+        user.AuthorisedUserInfo(name='Kirill', surname='Vasyurin', email='kirillich2912@gmail.com')
     ]
-    return users
+    return user.AuthorisedUsersInfo(
+        users=users
+    )
+
+
+@router.get(
+    '/{user_id}',
+    responses={
+        status.HTTP_200_OK: {
+            'model': user.AuthorisedUserInfo(),
+            'description': "Return user by user_id"
+        }
+    }
+)
+async def get_user(user_id: str):
+    # FIXME: Request to db via ORM to get user
+
+    return user.AuthorisedUserInfo(
+        name='Sasha', 
+        surname='Bush', 
+        email='bushanka2805@gmail.com'
+    )

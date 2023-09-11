@@ -1,18 +1,15 @@
 from fastapi import APIRouter, status
 from yookassa import Configuration, Payment
-# from logging.config import dictConfig
 from dotenv import load_dotenv
 
 import uuid
 import os
-# import logging
+import logging
 
 from ..models import billing, user
-# from ..logs.config.logconfig import LogConfig
 
 
-# dictConfig(LogConfig().model_dump())
-# logger = logging.getLogger("chatwiz")
+logger = logging.getLogger("uvicorn")
 
 load_dotenv()
 Configuration.account_id = os.getenv('YOKASSA_ACCOUNT_ID')
@@ -25,7 +22,7 @@ router = APIRouter(
 
 
 @router.post(
-        "/{user_token}",
+        "/createpay/{user_token}",
         status_code=status.HTTP_201_CREATED,
         responses={
             status.HTTP_201_CREATED: {
@@ -51,13 +48,13 @@ async def create_payment(user_token: str) -> billing.CreatedPayment:
         "confirmation": {
             "type": "embedded",
         },
-        # TODO: Check what campture is
+        # TODO: Check what capture is
         "capture": True,
         "description": description,
         "save_payment_method": True
     }, indepotence_key)
 
-    # logger.info(f"Payment created, user_token {user_token}")
+    logger.info(f"Payment created, user_token {user_token}")
 
     # FIXME: Request to ORM to save payment_method, here we nee user_token??
 
@@ -65,11 +62,28 @@ async def create_payment(user_token: str) -> billing.CreatedPayment:
     # either we do it through celery or we need to set up a webhook
 
     return billing.CreatedPayment(
-        indepotence_key=indepotence_key,
+        indepotence_key=str(indepotence_key),
         confirmation_token=payment.confirmation.confirmation_token
     )
 
-# # NOTE: 
+
+@router.post(
+        "/cancelsub/{user_id}",
+        responses={
+            status.HTTP_200_OK: {
+                "model": billing.CancelSubscription, 
+                "description": "Cancel user subscription"
+            },
+        }
+)
+async def cancel_subscription(user_id: str):
+    # FIXME: Request to ORM to cancel subscription
+
+    return billing.CancelSubscription(
+        user_id=user_id
+    )
+
+# # NOTE: periodically check payment status
 # from yookassa import Payment, Configuration
 # payment_id = '2c8ea686-000f-5000-9000-14c437e81122'
 # payment = Payment.find_one(payment_id)
