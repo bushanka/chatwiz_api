@@ -6,8 +6,9 @@ import uuid
 import os
 import logging
 
+from draft import get_sessionmaker
 from ..models import billing, user
-
+from ..schemas.crud import get_subscription_plan
 
 logger = logging.getLogger("uvicorn")
 
@@ -22,19 +23,22 @@ router = APIRouter(
 
 
 @router.post(
-        "/createpay/{user_token}",
-        status_code=status.HTTP_201_CREATED,
-        responses={
-            status.HTTP_201_CREATED: {
-                "model": billing.CreatedPayment, 
-                "description": "Create and return payment details"
-            },
-        }
+    "/createpay/{user_token}",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {
+            "model": billing.CreatedPayment,
+            "description": "Create and return payment details"
+        },
+    }
 )
-async def create_payment(user_token: str) -> billing.CreatedPayment:
+async def create_payment(user_token: str, subscription_plan_id: int) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
-    value = '1500.00'
-    description = ' Order 1'
+    ses_maker = get_sessionmaker()
+    subscription_plan = await get_subscription_plan(ses_maker, subscription_plan_id)
+    print(subscription_plan)
+    value = subscription_plan.price
+    description = 'Order 1'
 
     # Generate unique payment key
     indepotence_key = uuid.uuid4()
@@ -67,14 +71,22 @@ async def create_payment(user_token: str) -> billing.CreatedPayment:
     )
 
 
+async def chek_payment():
+    pass
+
+
+async def confirm_purchase():
+    pass
+
+
 @router.post(
-        "/cancelsub/{user_id}",
-        responses={
-            status.HTTP_200_OK: {
-                "model": billing.CancelSubscription, 
-                "description": "Cancel user subscription"
-            },
-        }
+    "/cancelsub/{user_id}",
+    responses={
+        status.HTTP_200_OK: {
+            "model": billing.CancelSubscription,
+            "description": "Cancel user subscription"
+        },
+    }
 )
 async def cancel_subscription(user_id: str):
     # FIXME: Request to ORM to cancel subscription

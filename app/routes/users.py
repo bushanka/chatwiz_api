@@ -1,8 +1,14 @@
 from fastapi import APIRouter, status
+from sqlalchemy import text
+from starlette.responses import JSONResponse
+
+from draft import get_sessionmaker
 from ..models import user
 
 import logging
 
+from ..schemas.crud import email_exists, add_user
+from ..schemas.db_schemas import User as UserTable
 
 logger = logging.getLogger("uvicorn")
 
@@ -13,13 +19,13 @@ router = APIRouter(
 
 
 @router.get(
-        "/", 
-        responses={
-            status.HTTP_200_OK: {
-                "model": user.AuthorisedUsersInfo, 
-                "description": "Return all authorized users"
-            },
-        }
+    "/",
+    responses={
+        status.HTTP_200_OK: {
+            "model": user.AuthorisedUsersInfo,
+            "description": "Return all authorized users"
+        },
+    }
 )
 async def get_users() -> user.AuthorisedUsersInfo:
     # FIXME: Request to db via ORM to get users
@@ -42,10 +48,33 @@ async def get_users() -> user.AuthorisedUsersInfo:
     }
 )
 async def get_user(user_id: str):
-    # FIXME: Request to db via ORM to get user
+    # FIXME: Request to db via ORM to get user. Нам тут это нуэно?
 
     return user.AuthorisedUserInfo(
-        name='Sasha', 
-        surname='Bush', 
+        name='Sasha',
+        surname='Bush',
         email='bushanka2805@gmail.com'
     )
+
+
+@router.post(
+    '/register',
+    responses={
+        status.HTTP_200_OK: {
+
+        }
+    }
+)
+async def register_user(email, password, name, surname) -> JSONResponse:
+    ses_maker = get_sessionmaker()
+    if await email_exists(ses_maker, email):
+        return JSONResponse(status_code=422, content='Email already exists')
+
+    new_user = UserTable(
+        email=email,
+        password=password,
+        name=name,
+        surname=surname
+    )
+    await add_user(ses_maker, new_user)
+    return JSONResponse(status_code=200, content='OK')
