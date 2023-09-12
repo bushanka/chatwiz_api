@@ -5,3 +5,4 @@ asyncpg
 sqlalchemy
 uvicorn
 python-multipart
+python-jose[cryptography]

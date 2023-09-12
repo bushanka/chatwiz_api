@@ -16,6 +16,7 @@ async def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
+    # FIXME: separetly handle expiration error and wrong token error if possible
     except JWTError:
         raise HTTPException(status_code=401, detail="Wrong token")
 
