@@ -6,7 +6,7 @@ import uuid
 import os
 import logging
 
-from draft import get_sessionmaker
+from draft import asession_maker
 from ..models import billing, user
 from ..schemas.crud import get_subscription_plan
 
@@ -34,7 +34,7 @@ router = APIRouter(
 )
 async def create_payment(user_token: str, subscription_plan_id: int) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
-    ses_maker = get_sessionmaker()
+    ses_maker = asession_maker
     subscription_plan = await get_subscription_plan(ses_maker, subscription_plan_id)
     print(subscription_plan)
     value = subscription_plan.price

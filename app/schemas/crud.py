@@ -23,8 +23,3 @@ async def get_subscription_plan(ses_maker, subscription_plan_id: int) -> Subscri
         stmt = select(SubscriptionPlan).where(SubscriptionPlan.id == subscription_plan_id)
         result = await session.execute(stmt)
         return result.one()[0]
-
-
-# async def add_context(ses_maker, file: UploadFile):
-#     async with
-#     pass

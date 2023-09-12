@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from sqlalchemy import text
 from starlette.responses import JSONResponse
 
-from draft import get_sessionmaker
+from draft import asession_maker
 from ..models import user
 
 import logging
@@ -66,7 +66,7 @@ async def get_user(user_id: str):
     }
 )
 async def register_user(email, password, name, surname) -> JSONResponse:
-    ses_maker = get_sessionmaker()
+    ses_maker = asession_maker
     if await email_exists(ses_maker, email):
         return JSONResponse(status_code=422, content='Email already exists')
 
