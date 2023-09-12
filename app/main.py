@@ -12,7 +12,7 @@ from .routes import (
 app = FastAPI()
 
 
-app.middleware("http")(auth_middleware)
+# app.middleware("http")(auth_middleware)
 
 app.include_router(users.router)
 app.include_router(billing.router)
