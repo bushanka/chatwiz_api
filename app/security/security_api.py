@@ -1,27 +1,25 @@
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Depends
+from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
+from jose import jwt, JWTError
 import os
 
 
 load_dotenv()
-SECRET_TOKEN = os.getenv('SECRET_TOKEN')
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token/admin")
 
-# Функция-фабрика для создания промежуточного ПО
-def auth_middleware():
-    async def authenticate(request: Request, call_next):
-        # Проверяем, содержится ли заголовок "Authorization" в запросе
-        if "Authorization" not in request.headers:
-            raise HTTPException(status_code=401, detail="Header Authorization is empty")
-        
-        # Получаем значение заголовка "Authorization" из запроса
-        token = request.headers["Authorization"]
-        
-        # Проверяем, является ли токен разрешенным
-        if token != SECRET_TOKEN:
-            raise HTTPException(status_code=403, detail="Wrong token")
-        
-        # Продолжаем выполнение запроса
-        response = await call_next(request)
-        return response
-    
-    return authenticate
+
+# Функция для проверки и декодирования токена
+async def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Wrong token")
+
+# Зависимость для получения текущего токена
+async def get_current_token(token: str = Depends(oauth2_scheme)):
+    payload = await decode_token(token)
+    return payload

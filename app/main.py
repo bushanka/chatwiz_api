@@ -1,22 +1,24 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
-from app.security.security_api import auth_middleware
+from app.security.security_api import get_current_token
 
 from .routes import (
     users,
     chats,
     billing,
-    context
+    context,
+    token
 )
 
 app = FastAPI()
 
+# Защищенные роутеры с помощью зависимости get_current_token
+app.include_router(users.router, dependencies=[Depends(get_current_token)])
+app.include_router(billing.router, dependencies=[Depends(get_current_token)])
+app.include_router(context.router, dependencies=[Depends(get_current_token)])
 
-# app.middleware("http")(auth_middleware)
-
-app.include_router(users.router)
-app.include_router(billing.router)
-app.include_router(context.router)
+# Незащищенный роутер для получения токена
+app.include_router(token.router)
 
 
 @app.get("/", include_in_schema=False)
