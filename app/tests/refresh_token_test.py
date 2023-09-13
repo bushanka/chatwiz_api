@@ -22,6 +22,7 @@ def login_sim():
     access_token = data['access_token']
     refresh_token = data['refresh_token']
     print("loged in")
+    print(access_token)
     return access_token, refresh_token
 
 
@@ -80,6 +81,7 @@ def exec_refresh_token(refresh_token):
     access_token = data['access_token']
     refresh_token = data['refresh_token']
     print("Token refreshed")
+    print(access_token)
     return access_token, refresh_token
 
 

@@ -67,10 +67,10 @@ async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()])
     refresh_token_expires = timedelta(minutes=int(REFRESH_TOKEN_EXPIRE_MINUTES))
 
     access_token = create_user_access_token(
-        data={"username": username}, expires_delta=access_token_expires
+        data={"sub": username}, expires_delta=access_token_expires
     )
     refresh_token = create_user_refresh_token(
-        data={"username": username}, expires_delta=refresh_token_expires
+        data={"sub": username}, expires_delta=refresh_token_expires
     )
 
     return {
@@ -91,10 +91,10 @@ async def refresh_token(refresh_token: str):
     refresh_token_expires = timedelta(minutes=int(REFRESH_TOKEN_EXPIRE_MINUTES))
 
     access_token = create_user_access_token(
-        data={"payload": payload}, expires_delta=access_token_expires
+        data={"sub": payload['sub']}, expires_delta=access_token_expires
     )
     refresh_token = create_user_refresh_token(
-        data={"payload": payload}, expires_delta=refresh_token_expires
+        data={"sub": payload['sub']}, expires_delta=refresh_token_expires
     )
 
     return {
