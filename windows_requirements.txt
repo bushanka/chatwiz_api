@@ -6,3 +6,4 @@ sqlalchemy
 uvicorn
 python-multipart
 python-jose[cryptography]
+aioboto3
