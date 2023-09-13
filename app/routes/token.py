@@ -38,28 +38,17 @@ def create_user_access_token(data: dict, expires_delta: Union[timedelta, None] =
     return encoded_jwt
 
 
-@router.post("/admin/")
-async def admin_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    admin_username = form_data.username
-    admin_password = form_data.password
-
-    if admin_username != ADMIN_USERNAME:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-    if ADMIN_HASHED_PASSWORD != sha256(admin_password.encode('utf-8')).hexdigest():
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-    token = jwt.encode({"username": admin_username}, SECRET_KEY, algorithm=ALGORITHM)
-
-    return {"access_token": token, "token_type": "bearer"}
-
-
-@router.post('/user')
+@router.post('/')
 async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     username = form_data.username
     password = form_data.password
 
-    # FIXME: Check username and hashed password
+    # FIXME: Check username and hashed password in orm, add or condition here
+    if username != ADMIN_USERNAME:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+    if ADMIN_HASHED_PASSWORD != sha256(password.encode('utf-8')).hexdigest():
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
     access_token = create_user_access_token(
@@ -67,3 +56,20 @@ async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()])
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+
+# @router.post("/admin")
+# async def admin_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+#     username = form_data.username
+#     password = form_data.password
+
+#     if username != ADMIN_USERNAME:
+#         raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+#     if ADMIN_HASHED_PASSWORD != sha256(password.encode('utf-8')).hexdigest():
+#         raise HTTPException(status_code=400, detail="Incorrect username or password")
+    
+#     token = jwt.encode({"username": username}, SECRET_KEY, algorithm=ALGORITHM)
+
+#     return {"access_token": token, "token_type": "bearer"}
