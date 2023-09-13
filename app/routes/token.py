@@ -4,7 +4,7 @@ from typing import Union
 from dotenv import load_dotenv
 from typing import Annotated
 from hashlib import sha256
-from jose import jwt
+from jose import JWTError, jwt
 from datetime import timedelta
 
 import datetime
@@ -16,8 +16,10 @@ load_dotenv()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_HASHED_PASSWORD = os.getenv("ADMIN_HASHED_PASSWORD")
 SECRET_KEY = os.getenv("SECRET_KEY")
+REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+REFRESH_TOKEN_EXPIRE_MINUTES = os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES")
 
 logger = logging.getLogger("uvicorn")
 
@@ -38,6 +40,17 @@ def create_user_access_token(data: dict, expires_delta: Union[timedelta, None] =
     return encoded_jwt
 
 
+def create_user_refresh_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, REFRESH_SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
 @router.post('/')
 async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     username = form_data.username
@@ -51,12 +64,44 @@ async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()])
         raise HTTPException(status_code=400, detail="Incorrect username or password")
 
     access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
+    refresh_token_expires = timedelta(minutes=int(REFRESH_TOKEN_EXPIRE_MINUTES))
+
     access_token = create_user_access_token(
         data={"username": username}, expires_delta=access_token_expires
     )
+    refresh_token = create_user_refresh_token(
+        data={"username": username}, expires_delta=refresh_token_expires
+    )
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token, 
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
+
+@router.post('/refresh/')
+async def refresh_token(refresh_token: str):
+    try:
+        payload = jwt.decode(refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Wrong refresh token")
+
+    access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
+    refresh_token_expires = timedelta(minutes=int(REFRESH_TOKEN_EXPIRE_MINUTES))
+
+    access_token = create_user_access_token(
+        data={"payload": payload}, expires_delta=access_token_expires
+    )
+    refresh_token = create_user_refresh_token(
+        data={"payload": payload}, expires_delta=refresh_token_expires
+    )
+
+    return {
+        "access_token": access_token, 
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 
 # @router.post("/admin")
