@@ -3,11 +3,12 @@ from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from jose import jwt, JWTError
 import os
+from app.jwt_manager import JWTManager
 
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/authorization/login")
 
 
 # Функция для проверки и декодирования токена
