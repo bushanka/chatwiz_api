@@ -1,8 +1,0 @@
-yookassa
-fastapi
-python-dotenv
-asyncpg
-sqlalchemy
-uvicorn
-python-multipart
-python-jose[cryptography]
