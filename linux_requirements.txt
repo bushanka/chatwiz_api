@@ -1,6 +1,0 @@
-yookassa
-fastapi
-python-dotenv
-asyncpg
-sqlalchemy
-uvicorn
