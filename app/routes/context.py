@@ -2,11 +2,16 @@ from fastapi import APIRouter, UploadFile, HTTPException
 from starlette.responses import JSONResponse
 from starlette import status
 from dotenv import load_dotenv
+from celery import Celery
+from celery.result import AsyncResult
+from ..models import context
 
 import aioboto3
 import logging
 import os
 
+
+app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
 
 load_dotenv()
 session = aioboto3.Session(
@@ -34,7 +39,7 @@ router = APIRouter(
         }
     }
 )
-async def create_upload_file(user_id, file: UploadFile) -> JSONResponse:
+async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadStatus:
     # Get the file size (in bytes)
     file.file.seek(0, 2)
     file_size = file.file.tell()
@@ -54,5 +59,33 @@ async def create_upload_file(user_id, file: UploadFile) -> JSONResponse:
         await s3.upload_fileobj(file.file,
                         'linkup-test-bucket',
                         str(user_id) + '-' + file.filename)
+    
+    task_id = app.send_task('llm.tasks.process_pdf', (file.filename, 14), queue='chatwiztasks_queue')
 
-    return JSONResponse(status_code=200, content='File uploaded successfully')
+    return context.FileUploadStatus(
+        task_id=str(task_id),
+        status='pending'
+    )
+
+
+
+@router.post(
+    "/get_status/",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Get status of file uploading"  
+        }
+    }
+)
+async def create_upload_file(task_id: str) -> context.FileUploadStatus:
+    task = AsyncResult(task_id)
+    if not task.ready():
+        return context.FileUploadStatus(
+            task_id=str(task_id), 
+            status='pending'
+        )
+    
+    return context.FileUploadStatus(
+        task_id=str(task_id), 
+        status='success'
+    )
