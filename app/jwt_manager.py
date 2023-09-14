@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from jose import jwt
 from jose import JWTError
 from starlette.responses import JSONResponse
+from fastapi import HTTPException
 
 load_dotenv()
 
@@ -16,7 +17,6 @@ REFRESH_TOKEN_EXPIRE_MINUTES = timedelta(minutes=float(os.getenv("REFRESH_TOKEN_
 
 
 class JWTManager:
-
     @classmethod
     async def create_access_token(cls, username: str) -> str:
         data_to_encode = {'username': username,
@@ -32,11 +32,18 @@ class JWTManager:
         return refresh_token
 
     @classmethod
-    async def decode(cls, token: str):
+    async def decode_refresh(cls, token: str):
         try:
             return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except JWTError:
-            return None
+            raise HTTPException(status_code=401, detail="Wrong access token")
+    
+    @classmethod
+    async def decode_access(cls, token: str):
+        try:
+            return jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+        except JWTError:
+            raise HTTPException(status_code=401, detail="Wrong access token")
 
     @classmethod
     async def refresh_token(cls, refresh_token: str) -> JSONResponse:
