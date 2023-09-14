@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status
+from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
 from dotenv import load_dotenv
 
@@ -7,6 +8,7 @@ import os
 import logging
 
 from draft import asession_maker
+from ..jwt_manager import JWTManager
 from ..models import billing, user
 from ..schemas.crud import get_subscription_plan
 
@@ -34,8 +36,8 @@ router = APIRouter(
 )
 async def create_payment(user_token: str, subscription_plan_id: int) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
-    ses_maker = asession_maker
-    subscription_plan = await get_subscription_plan(ses_maker, subscription_plan_id)
+
+    subscription_plan = await get_subscription_plan(subscription_plan_id)
     print(subscription_plan)
     value = subscription_plan.price
     description = 'Order 1'
@@ -69,6 +71,12 @@ async def create_payment(user_token: str, subscription_plan_id: int) -> billing.
         indepotence_key=str(indepotence_key),
         confirmation_token=payment.confirmation.confirmation_token
     )
+
+
+@router.get('/hello_world')
+async def hello_world(user_token) -> JSONResponse:
+    payload = await JWTManager.decode(user_token)
+    return JSONResponse(status_code=200, content=f'Hello {payload["username"]}')
 
 
 async def chek_payment():

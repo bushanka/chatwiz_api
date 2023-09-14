@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from jose import jwt, JWTError
 import os
 
-
 load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -19,6 +18,7 @@ async def decode_access_token(token: str):
     # FIXME: separetly handle expiration error and wrong token error if possible
     except JWTError:
         raise HTTPException(status_code=401, detail="Wrong access token")
+
 
 # Зависимость для получения текущего токена
 async def get_current_token(token: str = Depends(oauth2_scheme)):

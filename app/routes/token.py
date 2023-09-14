@@ -11,6 +11,9 @@ import datetime
 import os
 import logging
 
+from app.schemas.crud import check_credentials
+from app.status_messages import StatusMessage
+
 
 load_dotenv()
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
@@ -52,16 +55,15 @@ def create_user_refresh_token(data: dict, expires_delta: Union[timedelta, None] 
 
 
 @router.post('/')
-async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     username = form_data.username
     password = form_data.password
 
     # FIXME: Check username and hashed password in orm, add or condition here
-    if username != ADMIN_USERNAME:
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-    if ADMIN_HASHED_PASSWORD != sha256(password.encode('utf-8')).hexdigest():
-        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    credentials_check_result = await check_credentials(ses_maker, username, password)
+    if credentials_check_result != StatusMessage.ok:
+        raise HTTPException(status_code=400, detail=credentials_check_result)
 
     access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
     refresh_token_expires = timedelta(minutes=int(REFRESH_TOKEN_EXPIRE_MINUTES))
@@ -74,7 +76,7 @@ async def user_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()])
     )
 
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer"
     }
@@ -98,23 +100,7 @@ async def refresh_token(refresh_token: str):
     )
 
     return {
-        "access_token": access_token, 
+        "access_token": access_token,
         "refresh_token": refresh_token,
         "token_type": "bearer"
     }
-
-
-# @router.post("/admin")
-# async def admin_login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-#     username = form_data.username
-#     password = form_data.password
-
-#     if username != ADMIN_USERNAME:
-#         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-#     if ADMIN_HASHED_PASSWORD != sha256(password.encode('utf-8')).hexdigest():
-#         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    
-#     token = jwt.encode({"username": username}, SECRET_KEY, algorithm=ALGORITHM)
-
-#     return {"access_token": token, "token_type": "bearer"}
