@@ -1,11 +1,11 @@
-from datetime import datetime, timedelta
 import os
+from datetime import datetime, timedelta
+from typing import Dict, Any
 
 from dotenv import load_dotenv
-from jose import jwt
-from jose import JWTError
-from starlette.responses import JSONResponse
 from fastapi import HTTPException
+from jose import JWTError
+from jose import jwt
 
 load_dotenv()
 
@@ -34,31 +34,30 @@ class JWTManager:
     @classmethod
     async def decode_refresh(cls, token: str):
         try:
-            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        except JWTError:
-            raise HTTPException(status_code=401, detail="Wrong access token")
-    
-    @classmethod
-    async def decode_access(cls, token: str):
-        try:
             return jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
         except JWTError:
             raise HTTPException(status_code=401, detail="Wrong access token")
 
     @classmethod
-    async def refresh_token(cls, refresh_token: str) -> JSONResponse:
+    async def decode_access(cls, token: str):
         try:
-            payload = jwt.decode(refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except JWTError:
-            return JSONResponse(status_code=401,
-                                content="Wrong format of refresh token ")
-        if ('expiration' not in payload) or ('username' not in payload):
-            return JSONResponse(status_code=401,
-                                content="Wrong format of refresh token")
-        if datetime.now().timestamp() < payload['expiration']:
-            new_access_token = cls.create_access_token(payload['username'])
-            return JSONResponse(status_code=200,
-                                content=new_access_token)
-        else:
-            return JSONResponse(status_code=401,
-                                content="Refresh token is expired")
+            raise HTTPException(status_code=401, detail="Wrong access token")
+
+    @classmethod
+    async def validate_payload(cls, token_payload: Dict[str, Any]):
+        if ('expiration' not in token_payload) or ('username' not in token_payload):
+            raise HTTPException(status_code=401,
+                                detail="Wrong format of refresh token")
+        if datetime.now().timestamp() > token_payload['expiration']:
+            print(f'{datetime.now().timestamp() > token_payload["expiration"]=}')
+            raise HTTPException(status_code=401,
+                                detail="Refresh token is expired")
+        return token_payload
+
+    @classmethod
+    async def refresh_token(cls, refresh_token: str):
+        payload = await cls.decode_refresh(refresh_token)
+        valid_payload = cls.validate_payload(payload)
+        return valid_payload

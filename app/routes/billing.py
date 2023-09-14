@@ -1,16 +1,15 @@
-from fastapi import APIRouter, status
+import logging
+import os
+import uuid
+
+from dotenv import load_dotenv
+from fastapi import APIRouter, status, Depends
 from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
-from dotenv import load_dotenv
 
-import uuid
-import os
-import logging
-
-from draft import asession_maker
-from ..jwt_manager import JWTManager
-from ..models import billing, user
+from ..models import billing
 from ..schemas.crud import get_subscription_plan
+from ..security.security_api import get_current_token
 
 logger = logging.getLogger("uvicorn")
 
@@ -74,9 +73,8 @@ async def create_payment(user_token: str, subscription_plan_id: int) -> billing.
 
 
 @router.get('/hello_world')
-async def hello_world(user_token) -> JSONResponse:
-    payload = await JWTManager.decode(user_token)
-    return JSONResponse(status_code=200, content=f'Hello {payload["username"]}')
+async def hello_world(token_payload=Depends(get_current_token)) -> JSONResponse:
+    return JSONResponse(status_code=200, content=f'Hello {token_payload}')
 
 
 async def chek_payment():
