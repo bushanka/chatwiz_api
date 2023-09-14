@@ -28,13 +28,13 @@ class JWTManager:
     async def create_refresh_token(cls, username: str) -> str:
         data_to_encode = {'username': username,
                           'expiration': (datetime.now() + REFRESH_TOKEN_EXPIRE_MINUTES).timestamp()}
-        refresh_token = jwt.encode(data_to_encode, SECRET_KEY, ALGORITHM)
+        refresh_token = jwt.encode(data_to_encode, REFRESH_SECRET_KEY, ALGORITHM)
         return refresh_token
 
     @classmethod
     async def decode(cls, token: str):
         try:
-            return jwt.decode(token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
+            return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         except JWTError:
             return None
 
