@@ -60,7 +60,9 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
                         'linkup-test-bucket',
                         str(user_id) + '-' + file.filename)
     
-    task_id = app.send_task('llm.tasks.process_pdf', (file.filename, 14), queue='chatwiztasks_queue')
+    task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
+    # TODO:
+    # Wrap in async
 
     return context.FileUploadStatus(
         task_id=str(task_id),
