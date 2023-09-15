@@ -40,6 +40,7 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
         await asyncio.sleep(delay)
         # Через 5 итераций выходит на 2 секунды
         # Total wait: 3.1 sec после 5 итераций, далее по 2 сек делей
+        # Максимум будет 33 секунды загружать файл - потом Time out 
         delay = min(delay * 2, 2)  # exponential backoff, max 2 seconds
         max_tries -= 1
     
