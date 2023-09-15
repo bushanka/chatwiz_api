@@ -33,11 +33,13 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     delay = 0.1
     max_tries = 20
 
-    task_id = app.send_task(task_name, *task_args, queue=queue)
+    task_id = app.send_task(task_name, [*task_args], queue=queue)
     task = AsyncResult(task_id)
 
     while not task.ready() and max_tries > 0:
         await asyncio.sleep(delay)
+        # Через 5 итераций выходит на 2 секунды
+        # Total wait: 3.1 sec после 5 итераций, далее по 2 сек делей
         delay = min(delay * 2, 2)  # exponential backoff, max 2 seconds
         max_tries -= 1
     
@@ -56,6 +58,10 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
         },
         status.HTTP_400_BAD_REQUEST: {
             "description": "Bad file given"
+        },
+        status.HTTP_504_GATEWAY_TIMEOUT:
+        {
+            "description": "File was not downloaded within the allotted time"
         }
     }
 )
@@ -85,9 +91,15 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user_id), 'chatwiztasks_queue')
 
     if result == 'OK':
-        return JSONResponse(status_code=status.HTTP_200_OK)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content='OK'
+        )
     
-    return JSONResponse(status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+    return JSONResponse(
+        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+        content='Time out'
+    )
         
 
     # return context.FileUploadStatus(
