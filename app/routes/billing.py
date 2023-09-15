@@ -8,8 +8,8 @@ from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
 
 from ..models import billing
-from ..schemas.crud import get_subscription_plan
-from ..security.security_api import get_current_token
+from ..schemas.crud import get_subscription_plan_info
+from ..security.security_api import get_current_user
 
 logger = logging.getLogger("uvicorn")
 
@@ -36,7 +36,7 @@ router = APIRouter(
 async def create_payment(user_token: str, subscription_plan_id: int) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
 
-    subscription_plan = await get_subscription_plan(subscription_plan_id)
+    subscription_plan = await get_subscription_plan_info(subscription_plan_id)
     print(subscription_plan)
     value = subscription_plan.price
     description = 'Order 1'
@@ -73,8 +73,8 @@ async def create_payment(user_token: str, subscription_plan_id: int) -> billing.
 
 
 @router.get('/hello_world')
-async def hello_world(token_payload=Depends(get_current_token)) -> JSONResponse:
-    return JSONResponse(status_code=200, content=f'Hello {token_payload}')
+async def hello_world(user=Depends(get_current_user)) -> JSONResponse:
+    return JSONResponse(status_code=200, content=f'Hello {user.name}')
 
 
 async def chek_payment():

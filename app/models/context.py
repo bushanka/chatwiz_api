@@ -1,7 +1,10 @@
 from pydantic import BaseModel
-from typing import List
 
 
-class FileUploadStatus(BaseModel):
-    status: str
-    task_id: str
+class ContextInfo(BaseModel):
+    id: int
+    name: str
+    user_id: int
+    type: str
+    size: float
+    path: str

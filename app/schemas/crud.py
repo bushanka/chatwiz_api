@@ -3,7 +3,9 @@ from typing import Any
 from fastapi import UploadFile
 from sqlalchemy import text, select
 
-from app.schemas.db_schemas import User as UserTable, SubscriptionPlan
+from app.models.subscription_plan import SubscriptionPlanInfo
+from app.models.user import AuthorisedUserInfo
+from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context
 from app.status_messages import StatusMessage
 from draft import asession_maker
 
@@ -23,30 +25,59 @@ async def add_user(user_to_db: UserTable):
         await session.commit()
 
 
-async def get_subscription_plan(subscription_plan_id: int) -> SubscriptionPlan:
-    async with asession_maker() as session:
-        stmt = select(SubscriptionPlan).where(SubscriptionPlan.id == subscription_plan_id)
-        result = await session.execute(stmt)
-        return result.one()[0]
-
-
 async def check_credentials(email: str, hashed_password: str) -> StatusMessage:
     async with asession_maker() as session:
-        stmt = select(UserTable.email, UserTable.password).where(UserTable.email == email)
+        stmt = select(UserTable.email, UserTable.hashed_password).where(UserTable.email == email)
         res = await session.execute(stmt)
         res = res.first()
         if res is None:
             return StatusMessage.no_such_email.value
         else:
-            if res.password == hashed_password:
+            if res.hashed_password == hashed_password:
                 return StatusMessage.ok.value
             return StatusMessage.wrong_password.value
 
 
+async def get_user_info(email: str) -> AuthorisedUserInfo:
+    async with asession_maker() as session:
+        stmt = select(UserTable).where(UserTable.email == email)
+        res = await session.execute(stmt)
+        res = res.first()[0]
+        return AuthorisedUserInfo(id=res.id,
+                                  email=res.email,
+                                  name=res.name,
+                                  surname=res.surname,
+                                  # hashed_password=res.hashed_password,
+                                  # confirmed_registration=res.confirmed_registration,
+                                  num_of_requests_used=res.num_of_requests_used,
+                                  num_of_contents=res.num_of_contents,
+                                  subscription_plan_id=res.subscription_plan_id)
+
+
+async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlanInfo:
+    async with asession_maker() as session:
+        stmt = select(SubscriptionTable).where(SubscriptionTable.id == subscription_plan)
+        res = await session.execute(stmt)
+        res = res.first()[0]
+        return SubscriptionPlanInfo(id=res.id,
+                                    price=res.price,
+                                    max_content_amount=res.max_content_amount,
+                                    name=res.name,
+                                    max_content_size=res.max_content_size,
+                                    max_question_length=res.max_question_length
+                                    )
+
+
+async def add_context(context: Context):
+    async with asession_maker() as session:
+        session.add(context)
+        await session.commit()
+
+
 if __name__ == '__main__':
-    pass
-    # import asyncio
-    # from draft_but_mine import get_sessionmaker
-    #
-    # asm = get_sessionmaker()
-    # asyncio.run(check_credentials(asm, 'hacker1@sobaka', '2'))
+    # pass
+    import asyncio
+    from draft_but_mine import get_sessionmaker
+
+    asm = get_sessionmaker()
+    print(asyncio.run(get_user_info('1')))

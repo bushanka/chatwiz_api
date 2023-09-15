@@ -13,9 +13,12 @@ class User(Base):
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     email = Column(String(255), nullable=False)
-    password = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
+    subscription_plan_id = Column(Integer, nullable=False)
+    num_of_requests_used = Column(Integer, nullable=False)
+    num_of_contents = Column(Integer, nullable=False)
 
 
 class SubscriptionPlan(Base):
@@ -30,7 +33,7 @@ class SubscriptionPlan(Base):
     max_question_length = Column(Integer, nullable=False)
 
 
-class Content(Base):
+class Context(Base):
     __tablename__ = "contents"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)

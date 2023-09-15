@@ -6,11 +6,14 @@ import aioboto3
 from celery import Celery
 from celery.result import AsyncResult
 from dotenv import load_dotenv
-from fastapi import APIRouter, UploadFile, HTTPException
+from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from starlette import status
 from starlette.responses import JSONResponse
 
-from ..models import context
+from app.models.user import AuthorisedUserInfo
+from app.schemas.crud import get_subscription_plan_info, add_context
+from app.schemas.db_schemas import Context
+from app.security.security_api import get_current_user
 
 app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
 
@@ -56,26 +59,29 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     responses={
         status.HTTP_200_OK: {
             "description": "Return OK if upload is successful"
-
         },
         status.HTTP_400_BAD_REQUEST: {
             "description": "Bad file given"
         },
-        status.HTTP_504_GATEWAY_TIMEOUT:
-            {
-                "description": "File was not downloaded within the allotted time"
-            }
+        status.HTTP_504_GATEWAY_TIMEOUT: {
+            "description": "File was not downloaded within the allotted time"
+        }
     }
 )
-async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadStatus:
+async def create_upload_file(file: UploadFile,
+                             user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
     # Get the file size (in bytes)
+    sub_plan_info = await get_subscription_plan_info(user.subscription_plan_id)
+
     file.file.seek(0, 2)
     file_size = file.file.tell()
 
     # move the cursor back to the beginning
     await file.seek(0)
+    if user.num_of_contents >= sub_plan_info.max_content_amount:
+        raise HTTPException(status_code=400, detail="Max amount of contents already reached")
 
-    if file_size > 2 * 1024 * 1024:  # todo сделать проверку на максимальный размер в зависимости от пользователя
+    if file_size > sub_plan_info.max_content_size * 1024 * 1024:
         # more than 2 MB
         raise HTTPException(status_code=400, detail="File too large")
 
@@ -86,13 +92,23 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         await s3.upload_fileobj(file.file,
                                 'linkup-test-bucket',
-                                str(user_id) + '-' + file.filename)
+                                str(user.id) + '-' + file.filename)
 
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 
-    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user_id), 'chatwiztasks_queue')
+    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
 
     if result == 'OK':
+        context = Context(
+            name=str(user.id) + '-' + file.filename,
+            user_id=user.id,
+            type=content_type,
+            size=file_size,
+            path='linkup-test-bucket' + str(user.id) + '-' + file.filename
+        )
+
+        await add_context(context)
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content='OK'
@@ -102,29 +118,3 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
         content='Time out'
     )
-
-    # return context.FileUploadStatus(
-    #     task_id=str(task_id),
-    #     status='pending'
-    # )
-
-# @router.post(
-#     "/get_status/",
-#     responses={
-#         status.HTTP_200_OK: {
-#             "description": "Get status of file uploading"  
-#         }
-#     }
-# )
-# async def create_upload_file(task_id: str) -> context.FileUploadStatus:
-#     task = AsyncResult(task_id)
-#     if not task.ready():
-#         return context.FileUploadStatus(
-#             task_id=str(task_id), 
-#             status='pending'
-#         )
-
-#     return context.FileUploadStatus(
-#         task_id=str(task_id), 
-#         status='success'
-#     )
