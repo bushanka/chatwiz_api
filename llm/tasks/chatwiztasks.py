@@ -11,6 +11,7 @@ import os
 import io
 import boto3
 import time
+import pypdf
 
 
 class PyPDFBytesLoader(BaseLoader):
@@ -34,8 +35,6 @@ class PyPDFBytesLoader(BaseLoader):
 
     def load(self) -> List[Document]:
         """Load given path as pages."""
-        import pypdf
-
         pdf_reader = pypdf.PdfReader(self.stream)
         return [
             Document(
