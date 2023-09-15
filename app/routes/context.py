@@ -1,16 +1,16 @@
-from fastapi import APIRouter, UploadFile, HTTPException
-from starlette.responses import JSONResponse
-from starlette import status
-from dotenv import load_dotenv
-from celery import Celery
-from celery.result import AsyncResult
-from ..models import context
-
-import aioboto3
+import asyncio
 import logging
 import os
-import asyncio
 
+import aioboto3
+from celery import Celery
+from celery.result import AsyncResult
+from dotenv import load_dotenv
+from fastapi import APIRouter, UploadFile, HTTPException
+from starlette import status
+from starlette.responses import JSONResponse
+
+from ..models import context
 
 app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
 
@@ -26,6 +26,7 @@ router = APIRouter(
     prefix="/context",
     tags=["context"],
 )
+
 
 # Converts a Celery tasks to an async function
 # FIXME: Как нормально выйти из while-true ?
@@ -43,10 +44,10 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
         # Максимум будет 33 секунды загружать файл - потом Time out 
         delay = min(delay * 2, 2)  # exponential backoff, max 2 seconds
         max_tries -= 1
-    
+
     if max_tries <= 0:
         return 'Failed'
-    
+
     return 'OK'
 
 
@@ -55,15 +56,15 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     responses={
         status.HTTP_200_OK: {
             "description": "Return OK if upload is successful"
-                
+
         },
         status.HTTP_400_BAD_REQUEST: {
             "description": "Bad file given"
         },
         status.HTTP_504_GATEWAY_TIMEOUT:
-        {
-            "description": "File was not downloaded within the allotted time"
-        }
+            {
+                "description": "File was not downloaded within the allotted time"
+            }
     }
 )
 async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadStatus:
@@ -84,9 +85,9 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
 
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         await s3.upload_fileobj(file.file,
-                        'linkup-test-bucket',
-                        str(user_id) + '-' + file.filename)
-    
+                                'linkup-test-bucket',
+                                str(user_id) + '-' + file.filename)
+
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user_id), 'chatwiztasks_queue')
@@ -96,19 +97,16 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
             status_code=status.HTTP_200_OK,
             content='OK'
         )
-    
+
     return JSONResponse(
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
         content='Time out'
     )
-        
 
     # return context.FileUploadStatus(
     #     task_id=str(task_id),
     #     status='pending'
     # )
-
-
 
 # @router.post(
 #     "/get_status/",
@@ -125,7 +123,7 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
 #             task_id=str(task_id), 
 #             status='pending'
 #         )
-    
+
 #     return context.FileUploadStatus(
 #         task_id=str(task_id), 
 #         status='success'
