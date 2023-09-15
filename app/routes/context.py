@@ -9,6 +9,7 @@ from ..models import context
 import aioboto3
 import logging
 import os
+import asyncio
 
 
 app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
@@ -25,6 +26,25 @@ router = APIRouter(
     prefix="/context",
     tags=["context"],
 )
+
+# Converts a Celery tasks to an async function
+# FIXME: Как нормально выйти из while-true ?
+async def celery_async_wrapper(app, task_name, task_args, queue):
+    delay = 0.1
+    max_tries = 20
+
+    task_id = app.send_task(task_name, *task_args, queue=queue)
+    task = AsyncResult(task_id)
+
+    while not task.ready() and max_tries > 0:
+        await asyncio.sleep(delay)
+        delay = min(delay * 2, 2)  # exponential backoff, max 2 seconds
+        max_tries -= 1
+    
+    if max_tries <= 0:
+        return 'Failed'
+    
+    return 'OK'
 
 
 @router.post(
@@ -60,34 +80,40 @@ async def create_upload_file(user_id, file: UploadFile) -> context.FileUploadSta
                         'linkup-test-bucket',
                         str(user_id) + '-' + file.filename)
     
-    task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
-    # TODO:
-    # Wrap in async
+    # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 
-    return context.FileUploadStatus(
-        task_id=str(task_id),
-        status='pending'
-    )
+    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user_id), 'chatwiztasks_queue')
 
-
-
-@router.post(
-    "/get_status/",
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Get status of file uploading"  
-        }
-    }
-)
-async def create_upload_file(task_id: str) -> context.FileUploadStatus:
-    task = AsyncResult(task_id)
-    if not task.ready():
-        return context.FileUploadStatus(
-            task_id=str(task_id), 
-            status='pending'
-        )
+    if result == 'OK':
+        return JSONResponse(status_code=status.HTTP_200_OK)
     
-    return context.FileUploadStatus(
-        task_id=str(task_id), 
-        status='success'
-    )
+    return JSONResponse(status_code=status.HTTP_504_GATEWAY_TIMEOUT)
+        
+
+    # return context.FileUploadStatus(
+    #     task_id=str(task_id),
+    #     status='pending'
+    # )
+
+
+
+# @router.post(
+#     "/get_status/",
+#     responses={
+#         status.HTTP_200_OK: {
+#             "description": "Get status of file uploading"  
+#         }
+#     }
+# )
+# async def create_upload_file(task_id: str) -> context.FileUploadStatus:
+#     task = AsyncResult(task_id)
+#     if not task.ready():
+#         return context.FileUploadStatus(
+#             task_id=str(task_id), 
+#             status='pending'
+#         )
+    
+#     return context.FileUploadStatus(
+#         task_id=str(task_id), 
+#         status='success'
+#     )
