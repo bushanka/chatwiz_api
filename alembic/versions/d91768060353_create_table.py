@@ -28,7 +28,7 @@ def upgrade() -> None:
         sa.Column('surname', sa.String(255), nullable=False),  # нахуя
         sa.Column('password', sa.String(255), nullable=False),
         sa.Column('confirmed_registration', sa.Boolean, nullable=False, server_default=text('false')),
-        sa.Column('num_of_contents', sa.Integer, nullable=False, server_default=text('0')),
+        sa.Column('num_of_contexts', sa.Integer, nullable=False, server_default=text('0')),
         sa.Column('num_of_requests_used', sa.Integer, nullable=False, server_default=text('0')),
         sa.Column('subscription_type', sa.Integer, nullable=False),  # todo make it foreign key
     )
@@ -38,13 +38,13 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('price', sa.Integer, nullable=False),
-        sa.Column('max_content_amount', sa.Integer, nullable=False),
-        sa.Column('max_content_size', sa.Integer, nullable=False),
+        sa.Column('max_context_amount', sa.Integer, nullable=False),
+        sa.Column('max_context_size', sa.Integer, nullable=False),
         sa.Column('max_question_length', sa.Integer, nullable=False),
     )
 
     op.create_table(
-        'contents',
+        'contexts',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('type', sa.String(255), nullable=False),
@@ -58,28 +58,13 @@ def upgrade() -> None:
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('user_id', sa.Integer, nullable=False),  # todo foreign key
-        sa.Column('content_id', sa.Integer, nullable=True),  # todo  foreign key
-    )
-
-    op.create_table(
-        'user_messages',
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('chat_id', sa.Integer, nullable=False),  # todo foreign key
-        sa.Column('text', sa.Text, nullable=False),
-    )
-
-    op.create_table(
-        'answer_messages',
-        sa.Column('id', sa.Integer, primary_key=True),
-        sa.Column('user_message_id', sa.Integer, nullable=False),  # todo foreign key
-        sa.Column('text', sa.Text, nullable=False),
+        sa.Column('context_id', sa.Integer, nullable=True),  # todo  foreign key
+        sa.Column('message_history', sa.JSON, nullable=True)
     )
 
 
 def downgrade() -> None:
     op.drop_table('users')
     op.drop_table('subscription_plan')
-    op.drop_table('contents')
+    op.drop_table('contexts')
     op.drop_table('chats')
-    op.drop_table('user_messages')
-    op.drop_table('answer_messages')

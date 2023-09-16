@@ -11,7 +11,7 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from app.models.user import AuthorisedUserInfo
-from app.schemas.crud import get_subscription_plan_info, add_context
+from app.schemas.crud import get_subscription_plan_info, add_context, update_user
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
 
@@ -78,10 +78,10 @@ async def create_upload_file(file: UploadFile,
 
     # move the cursor back to the beginning
     await file.seek(0)
-    if user.num_of_contents >= sub_plan_info.max_content_amount:
-        raise HTTPException(status_code=400, detail="Max amount of contents already reached")
+    if user.num_of_contexts >= sub_plan_info.max_context_size:
+        raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
 
-    if file_size > sub_plan_info.max_content_size * 1024 * 1024:
+    if file_size > sub_plan_info.max_context_size * 1024 * 1024:
         # more than 2 MB
         raise HTTPException(status_code=400, detail="File too large")
 
@@ -97,7 +97,6 @@ async def create_upload_file(file: UploadFile,
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
@@ -107,6 +106,8 @@ async def create_upload_file(file: UploadFile,
             path='linkup-test-bucket' + str(user.id) + '-' + file.filename
         )
 
+        await update_user(user_email=user.email,
+                          new_values={'num_of_contents': user.num_of_contexts + 1})
         await add_context(context)
 
         return JSONResponse(

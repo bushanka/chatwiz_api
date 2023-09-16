@@ -36,7 +36,7 @@ async def register_user(email: str,
 
     new_user = UserTable(
         email=email,
-        password=hashed_password,
+        hashed_password=hashed_password,
         name=name,
         surname=surname
     )

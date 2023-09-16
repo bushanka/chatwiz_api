@@ -11,7 +11,7 @@ class AuthorisedUserInfo(BaseModel):
     # hashed_password: str
     # confirmed_registration: bool
     num_of_requests_used: int
-    num_of_contents: int
+    num_of_contexts: int
     subscription_plan_id: int
 
 # class AuthorisedUsersInfo(BaseModel):

@@ -1,7 +1,7 @@
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import UploadFile
-from sqlalchemy import text, select
+from sqlalchemy import text, select, update
 
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
@@ -22,6 +22,13 @@ async def email_exists(email: str) -> bool:
 async def add_user(user_to_db: UserTable):
     async with asession_maker() as session:
         session.add(user_to_db)
+        await session.commit()
+
+
+async def update_user(user_email: str, new_values: Dict[str, Any]):
+    async with asession_maker() as session:
+        stmt = update(UserTable).where(UserTable.email == user_email).values(new_values)
+        await session.execute(stmt)
         await session.commit()
 
 
@@ -50,7 +57,7 @@ async def get_user_info(email: str) -> AuthorisedUserInfo:
                                   # hashed_password=res.hashed_password,
                                   # confirmed_registration=res.confirmed_registration,
                                   num_of_requests_used=res.num_of_requests_used,
-                                  num_of_contents=res.num_of_contents,
+                                  num_of_contexts=res.num_of_contexts,
                                   subscription_plan_id=res.subscription_plan_id)
 
 
@@ -61,9 +68,9 @@ async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlan
         res = res.first()[0]
         return SubscriptionPlanInfo(id=res.id,
                                     price=res.price,
-                                    max_content_amount=res.max_content_amount,
+                                    max_context_amount=res.max_context_amount,
                                     name=res.name,
-                                    max_content_size=res.max_content_size,
+                                    max_context_size=res.max_context_size,
                                     max_question_length=res.max_question_length
                                     )
 
@@ -74,10 +81,14 @@ async def add_context(context: Context):
         await session.commit()
 
 
+# async def add_chat(chat):
+#     pass
+
+
 if __name__ == '__main__':
     # pass
     import asyncio
     from draft_but_mine import get_sessionmaker
 
     asm = get_sessionmaker()
-    print(asyncio.run(get_user_info('1')))
+    print(asyncio.run(get_subscription_plan_info(1)))
