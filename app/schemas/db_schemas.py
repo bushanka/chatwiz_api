@@ -1,6 +1,6 @@
 #  Модули, определяющие модели данных для вашей базы данных. 
 # Тут описываем наш ORM, такой как SQLAlchemy, для определения моделей данных.
-from sqlalchemy import Column, Integer, String, Float
+from sqlalchemy import Column, Integer, String, Float, JSON
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -34,7 +34,7 @@ class SubscriptionPlan(Base):
 
 
 class Context(Base):
-    __tablename__ = "contents"
+    __tablename__ = "contexts"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False, )
@@ -44,11 +44,14 @@ class Context(Base):
     path = Column(String(255), nullable=False, )
 
 
-# class Chat(Base):
-#     id: int
-#     name: str
-#     user_id: int
-#     context_id: int
+class Chat(Base):
+    __tablename__ = "chats"
+
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False)
+    user_id = Column(Integer, nullable=False)
+    context_id = Column(Integer, nullable=True)
+    message_history = Column(JSON, nullable=False)
 #
 #
 # class UserMessage(Base):
