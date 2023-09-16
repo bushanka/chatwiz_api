@@ -35,7 +35,7 @@ async def login(
 
     credentials_check_result = await check_credentials(username, password)
     if credentials_check_result != StatusMessage.ok.value:
-        raise HTTPException(status_code=400, detail=credentials_check_result.value)
+        raise HTTPException(status_code=400, detail=credentials_check_result)
 
     new_access_token = await JWTManager.create_access_token(username)
     new_refresh_token = await JWTManager.create_refresh_token(username)
