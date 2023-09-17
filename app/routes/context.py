@@ -2,12 +2,16 @@ import asyncio
 import logging
 import os
 from typing import List
+import aiofiles
 
 import aioboto3
 from celery import Celery
 from celery.result import AsyncResult
 from dotenv import load_dotenv
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
+from fastapi.responses import FileResponse
+import tempfile
+
 from starlette import status
 from starlette.responses import JSONResponse
 
@@ -100,6 +104,8 @@ async def create_upload_file(file: UploadFile,
 
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 
+    logger.info(type(file.file))
+
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
     if result == 'OK':
         context = Context(
@@ -136,3 +142,22 @@ async def create_upload_file(file: UploadFile,
 async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)) -> UserContextsInfo:
     user_contexts = await get_user_contexts_from_db(user.id)
     return user_contexts
+
+
+@router.get(
+    "/download_context",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Return given context"
+        },
+    }
+)
+async def download_context(filename:str, user: AuthorisedUserInfo = Depends(get_current_user)):
+    # Код для получения байтового объекта файла PDF
+    async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
+        response = await s3.get_object(Bucket='linkup-test-bucket', Key=filename)
+        pdf_bytes = await response['Body'].read()
+    
+    async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        await temp_file.write(pdf_bytes)
+        return FileResponse(temp_file.name, media_type='multipart/form-data', filename=filename)

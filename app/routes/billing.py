@@ -60,7 +60,7 @@ async def create_payment(subscription_plan_id: int, user: AuthorisedUserInfo = D
         "save_payment_method": True
     }, indepotence_key)
 
-    logger.info(f"Payment created, user_token {user_token}")
+    logger.info(f"Payment created {user}")
 
     # FIXME: Request to ORM to save payment_method, here we need user_token??
 
