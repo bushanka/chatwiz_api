@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+from typing import List
 
 import aioboto3
 from celery import Celery
@@ -11,9 +12,12 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from app.models.user import AuthorisedUserInfo
-from app.schemas.crud import get_subscription_plan_info, add_context, update_user
+from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
+
+from app.models.context import UserContextsInfo
+
 
 app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
 
@@ -119,3 +123,16 @@ async def create_upload_file(file: UploadFile,
         status_code=status.HTTP_504_GATEWAY_TIMEOUT,
         content='Time out'
     )
+
+
+@router.post(
+    "/get_contexts/",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Return all user contexts"
+        },
+    }
+)
+async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)) -> UserContextsInfo:
+    user_contexts = await get_user_contexts_from_db(user.id)
+    return user_contexts

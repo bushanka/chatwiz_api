@@ -7,9 +7,10 @@ from fastapi import APIRouter, status, Depends
 from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
 
-from ..models import billing
-from ..schemas.crud import get_subscription_plan_info
-from ..security.security_api import get_current_user
+from app.models import billing
+from app.schemas.crud import get_subscription_plan_info
+from app.security.security_api import get_current_user
+from app.models.user import AuthorisedUserInfo
 
 logger = logging.getLogger("uvicorn")
 
@@ -24,7 +25,7 @@ router = APIRouter(
 
 
 @router.post(
-    "/createpay/{user_token}",
+    "/createpay/",
     status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {
@@ -33,7 +34,7 @@ router = APIRouter(
         },
     }
 )
-async def create_payment(user_token: str, subscription_plan_id: int) -> billing.CreatedPayment:
+async def create_payment(subscription_plan_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
 
     subscription_plan = await get_subscription_plan_info(subscription_plan_id)
@@ -61,7 +62,7 @@ async def create_payment(user_token: str, subscription_plan_id: int) -> billing.
 
     logger.info(f"Payment created, user_token {user_token}")
 
-    # FIXME: Request to ORM to save payment_method, here we nee user_token??
+    # FIXME: Request to ORM to save payment_method, here we need user_token??
 
     # FIXME: We need to periodically poll the Yukassa server to check the payment status - 
     # either we do it through celery or we need to set up a webhook
@@ -86,7 +87,7 @@ async def confirm_purchase():
 
 
 @router.post(
-    "/cancelsub/{user_id}",
+    "/cancelsub/",
     responses={
         status.HTTP_200_OK: {
             "model": billing.CancelSubscription,
@@ -94,7 +95,7 @@ async def confirm_purchase():
         },
     }
 )
-async def cancel_subscription(user_id: str):
+async def cancel_subscription(user: AuthorisedUserInfo = Depends(get_current_user)):
     # FIXME: Request to ORM to cancel subscription
 
     return billing.CancelSubscription(

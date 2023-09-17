@@ -4,6 +4,7 @@ from fastapi import UploadFile
 from sqlalchemy import text, select, update
 
 from app.models.subscription_plan import SubscriptionPlanInfo
+from app.models.context import ContextInfo, UserContextsInfo
 from app.models.user import AuthorisedUserInfo
 from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
 from app.status_messages import StatusMessage
@@ -101,6 +102,27 @@ async def get_chat_message_history_by_chat_id(chat_id: int):
         res = await session.execute(stmt)
         res = res.first()[0]
         return res
+
+
+async def get_user_contexts_from_db(user_id: int):
+    async with asession_maker() as session:
+        stmt = select(Context).where(Context.user_id == user_id)
+        res = await session.execute(stmt)
+        res = res.fetchall()
+        return UserContextsInfo(
+            contexts=[
+                ContextInfo(
+                    id=el[0].id,
+                    name=el[0].name,
+                    user_id=el[0].user_id,
+                    type=el[0].type,
+                    size=el[0].size,
+                    path=el[0].path
+                ) for el in res
+            ]
+        )
+
+
 
 if __name__ == '__main__':
     # pass

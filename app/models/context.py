@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import List
 
 
 class ContextInfo(BaseModel):
@@ -8,3 +9,7 @@ class ContextInfo(BaseModel):
     type: str
     size: float
     path: str
+
+
+class UserContextsInfo(BaseModel):
+    contexts: List[ContextInfo]
