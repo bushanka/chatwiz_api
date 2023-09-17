@@ -51,6 +51,13 @@ class JWTManager:
             raise HTTPException(status_code=401, detail="Wrong access token")
 
     @classmethod
-    async def refresh_token(cls, refresh_token: str):
-        payload = await cls.decode_refresh(refresh_token)
-        return payload
+    async def refresh_tokens(cls, refresh_token: str, username: str):
+        # Validate refresh token
+        await cls.decode_refresh(refresh_token)
+
+        new_refresh_token = await cls.create_refresh_token(username)
+        new_access_token = await cls.create_access_token(username)
+        return {
+            "access_token": new_access_token,
+            "refresh_token": new_refresh_token
+        }
