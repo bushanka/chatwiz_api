@@ -18,7 +18,7 @@ class RefreshAccessTokenResponse200(BaseModel):  # мб стоит это отс
     token_type: str
 
 
-@router.post('/refresh_access_token')
+@router.post('/')
 async def refresh_access_token(refresh_token: str) -> RefreshAccessTokenResponse200:
     new_access_token = await JWTManager.refresh_access_token(refresh_token)
 
