@@ -91,7 +91,7 @@ async def add_chat(chat: Chat):
 
 async def update_chat(chat_id: int, new_values: Dict[str, Any]):
     async with asession_maker() as session:
-        stmt = update(Chat).where(Context.id == chat_id).values(new_values)
+        stmt = update(Chat).where(Chat.id == chat_id).values(new_values)
         await session.execute(stmt)
         await session.commit()
 
@@ -124,10 +124,15 @@ async def get_user_contexts_from_db(user_id: int):
 
 
 
+
 if __name__ == '__main__':
     # pass
     import asyncio
+    import json
     from draft_but_mine import get_sessionmaker
 
     asm = get_sessionmaker()
-    print(asyncio.run(get_subscription_plan_info(1)))
+    # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
+    qwer = json.loads(asyncio.run(get_chat_message_history_by_chat_id(5)))
+
+    print(qwer)
