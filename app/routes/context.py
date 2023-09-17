@@ -107,7 +107,7 @@ async def create_upload_file(file: UploadFile,
         )
 
         await update_user(user_email=user.email,
-                          new_values={'num_of_contents': user.num_of_contexts + 1})
+                          new_values={'num_of_contexts': user.num_of_contexts + 1})
         await add_context(context)
 
         return JSONResponse(

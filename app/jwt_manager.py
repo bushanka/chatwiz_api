@@ -1,6 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from typing import Dict, Any
 
 from dotenv import load_dotenv
 from fastapi import HTTPException
@@ -52,7 +51,6 @@ class JWTManager:
 
     @classmethod
     async def refresh_access_token(cls, refresh_token: str):
-        # Validate refresh token
         payload = await cls.decode_refresh(refresh_token)
 
         new_access_token = await cls.create_access_token(payload['username'])

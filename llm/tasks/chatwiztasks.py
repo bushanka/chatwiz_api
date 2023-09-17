@@ -1,17 +1,16 @@
-from celery import Celery
+import io
+import os
+import time
 from typing import List, Optional
 
+import boto3
+import pypdf
+from celery import Celery
+from dotenv import load_dotenv
 from langchain.docstore.document import Document
-from langchain.vectorstores.pgvector import PGVector
-from langchain.embeddings import OpenAIEmbeddings
 from langchain.document_loaders.base import BaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
-from dotenv import load_dotenv
-import os
-import io
-import boto3
-import time
-import pypdf
+from langchain.vectorstores.pgvector import PGVector
 
 
 class PyPDFBytesLoader(BaseLoader):
@@ -20,7 +19,7 @@ class PyPDFBytesLoader(BaseLoader):
     Loader also stores page numbers in metadatas.
     """
 
-    def __init__(self, stream: io.BytesIO, text_splitter: Optional[TextSplitter]=None):
+    def __init__(self, stream: io.BytesIO, text_splitter: Optional[TextSplitter] = None):
         """Initialize with BytesIO object."""
 
         try:
@@ -39,11 +38,11 @@ class PyPDFBytesLoader(BaseLoader):
         return [
             Document(
                 page_content=page.extract_text(),
-                metadata={"page": i}, 
+                metadata={"page": i},
             )
             for i, page in enumerate(pdf_reader.pages)
         ]
-    
+
     def load_and_split(self, ):
         if self.text_splitter is None:
             raise Exception(
@@ -56,7 +55,6 @@ class PyPDFBytesLoader(BaseLoader):
 app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
 
 app.conf.task_routes = {'chatwiztasks.process_pdf': {'queue': 'chatwiztasks_queue'}}
-
 
 load_dotenv()
 
@@ -88,7 +86,7 @@ def process_pdf(filename, user_id):
     normalized_filename = str(user_id) + '-' + filename
 
     # Получить объект
-    get_object_response = s3.get_object(Bucket='linkup-test-bucket',Key=normalized_filename)
+    get_object_response = s3.get_object(Bucket='linkup-test-bucket', Key=normalized_filename)
     pdf_object = get_object_response['Body'].read()
 
     with io.BytesIO(pdf_object) as open_pdf_file:
@@ -111,6 +109,6 @@ def process_pdf(filename, user_id):
     # print('done')
 
     # For test, simulates embedding docs
-    time.sleep(15)
+    time.sleep(3)
 
     return f'{normalized_filename} loaded'

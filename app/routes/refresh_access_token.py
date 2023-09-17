@@ -1,10 +1,9 @@
 import logging
 
 from fastapi import APIRouter
-
-from app.jwt_manager import JWTManager
 from pydantic import BaseModel
 
+from app.jwt_manager import JWTManager
 
 logger = logging.getLogger("uvicorn")
 
@@ -12,6 +11,7 @@ router = APIRouter(
     prefix="/refresh_access_token",
     tags=["refresh_access_token"],
 )
+
 
 class RefreshAccessTokenResponse200(BaseModel):  # мб стоит это отсюда вынести
     access_token: str
