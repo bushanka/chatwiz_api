@@ -41,8 +41,8 @@ server {
     listen 443 ssl;
     server_name www.lovelogo.ru;
 
-    ssl_certificate /home/bush/project/chatwiz/chatwiz_api/fullchain.pem;
-    ssl_certificate_key /home/bush/project/chatwiz/chatwiz_api/privkey.pem;
+    ssl_certificate path/to/fullchain.pem;
+    ssl_certificate_key path/to/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
