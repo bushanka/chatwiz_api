@@ -17,7 +17,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/authorization/login",
 
 async def get_current_user(access_token: str = Depends(oauth2_scheme)) -> AuthorisedUserInfo:
     payload = await JWTManager.decode_access(access_token)
-    validated_payload = await JWTManager.validate_payload(payload)
-    user_email = validated_payload['username']
+
+    user_email = payload['username']
     user = await get_user_info(user_email)
+    
     return user
