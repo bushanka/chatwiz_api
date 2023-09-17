@@ -1,6 +1,5 @@
 # CHATWIZ API
 
-```
 # Инструкции по установке и настройке проекта
 
 ## Шаг 1: Установка Certbot
@@ -42,8 +41,8 @@ server {
     listen 443 ssl;
     server_name www.lovelogo.ru;
 
-    ssl_certificate /home/bush/project/chatwiz/chatwiz_api/fullchain.pem;
-    ssl_certificate_key /home/bush/project/chatwiz/chatwiz_api/privkey.pem;
+    ssl_certificate path/to/fullchain.pem;
+    ssl_certificate_key path/to/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
@@ -88,4 +87,3 @@ cd llm/tasks | celery -A chatwiztasks worker -Q chatwiztasks_queue --loglevel=IN
 ```
 
 Теперь ваш проект должен быть успешно настроен и запущен. Откройте браузер и перейдите по адресу `https://www.lovelogo.ru`, чтобы убедиться, что он работает корректно.
-```
