@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.security.security_api import get_current_user
 from .routes import (
@@ -13,7 +14,14 @@ from .routes import (
 )
 
 app = FastAPI()
-
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.include_router(registration.router)
 app.include_router(authorization.router)
 app.include_router(refresh_access_token.router)

@@ -52,7 +52,7 @@ class PyPDFBytesLoader(BaseLoader):
         return self.text_splitter.split_documents(docs)
 
 
-app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
+app = Celery('chatwiztasks', broker=os.getenv('APP_BROKER_URI'), backend='rpc://')
 
 app.conf.task_routes = {'chatwiztasks.process_pdf': {'queue': 'chatwiztasks_queue'}}
 

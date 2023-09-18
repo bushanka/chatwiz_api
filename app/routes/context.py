@@ -22,8 +22,7 @@ from app.security.security_api import get_current_user
 
 from app.models.context import UserContextsInfo
 
-
-app = Celery('chatwiztasks', broker='pyamqp://guest@localhost//', backend='rpc://')
+app = Celery('chatwiztasks', broker=os.getenv('APP_BROKER_URI'), backend='rpc://')
 
 load_dotenv()
 session = aioboto3.Session(
@@ -152,12 +151,12 @@ async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)
         },
     }
 )
-async def download_context(filename:str, user: AuthorisedUserInfo = Depends(get_current_user)):
+async def download_context(filename: str, user: AuthorisedUserInfo = Depends(get_current_user)):
     # Код для получения байтового объекта файла PDF
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         response = await s3.get_object(Bucket='linkup-test-bucket', Key=filename)
         pdf_bytes = await response['Body'].read()
-    
+
     async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as temp_file:
         await temp_file.write(pdf_bytes)
         return FileResponse(temp_file.name, media_type='multipart/form-data', filename=filename)
