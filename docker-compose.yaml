@@ -3,7 +3,7 @@ version: "3"
 services:
 
   python_fastapi:
-    image: chatwiz_fastapi
+    image: chatwizapi
     command:
       [
           "gunicorn", "-w 2", "-k uvicorn.workers.UvicornWorker",
@@ -16,7 +16,7 @@ services:
       - 8000:8000
 
   celery_worker:
-    image: chatwiz_fastapi
+    image: chatwizapi
     command:
       [
         "celery", "-A", "llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue", "--loglevel=INFO", "--hostname=chatwiz", "--autoscale=2,1"
