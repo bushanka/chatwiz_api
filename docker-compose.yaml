@@ -1,8 +1,9 @@
 version: "3"
 
 services:
-  python_app_main:
-    image: test
+
+  python_fastapi:
+    image: chatwiz_fastapi
     command:
       [
           "gunicorn", "-w 2", "-k uvicorn.workers.UvicornWorker",
@@ -13,12 +14,11 @@ services:
       APP_BROKER_URI: "amqp://rabbitmq"
     ports:
       - 8000:8000
-  python_task:
-    image: test
+
+  celery_worker:
+    image: chatwiz_fastapi
     command:
       [
-#        "cd llm/tasks", "&&", "celery -A chatwiztasks worker -Q chatwiztasks_queue --loglevel=INFO --hostname=chatwiz --autoscale=2,1"
-#        "cd llm && ls"
         "celery", "-A", "llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue", "--loglevel=INFO", "--hostname=chatwiz", "--autoscale=2,1"
       ]
     environment:
@@ -33,17 +33,12 @@ services:
 #    volumes:
 #      - nginx_volume:/etc/nginx/conf.d/default.conf
     depends_on:
-      - python_app_main
-#  celery:
-#    image: celery
-#    command: celery -A app.worker worker --loglevel=info
-#    volumes:
-#      - .:/app
-#    depends_on:
-#      - rabbitmq
+      - python_fastapi
+    
   rabbitmq:
     image: rabbitmq:3.12.4
     ports:
       - 5672:5672
+      
 volumes:
   nginx_volume:
