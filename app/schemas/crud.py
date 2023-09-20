@@ -1,6 +1,5 @@
 from typing import Any, Dict
 
-from fastapi import UploadFile
 from sqlalchemy import text, select, update
 
 from app.models.subscription_plan import SubscriptionPlanInfo
@@ -9,7 +8,7 @@ from app.models.user import AuthorisedUserInfo
 from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
 from app.status_messages import StatusMessage
 from draft import asession_maker
-from llm.apgvector import AsyncPgVector
+from app.llm.apgvector import AsyncPgVector
 import os
 
 
@@ -140,8 +139,7 @@ async def get_chat_context_name_by_chat_id(chat_id: int):
         res_context_id = res_context_id.first()[0]
 
         stmt = select(Context.name).where(Context.id == res_context_id)
-        res = await session.execute(stmt)
-        res = res.first()[0]
+        res = await session.scalar(stmt)
         return res
 
 

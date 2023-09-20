@@ -15,3 +15,6 @@ Question:
 Answer:
 """
 QA_CHAIN_PROMPT = PromptTemplate.from_template(template)
+
+
+print(QA_CHAIN_PROMPT)
