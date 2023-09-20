@@ -19,10 +19,10 @@ uvicorn==0.23.2
 yookassa==2.4.0
 python-multipart==0.0.6
 jose==1.0.0
-psycopg2-binary
-gunicorn
-
 pydantic~=2.3.0
 alembic~=1.12.0
-
-
+psycopg2-binary
+gunicorn
+pgvector
+openai
+tiktoken

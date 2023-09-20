@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends
 
 from app.model_message_proccessing import get_new_message_history
 from app.models.chat import ChatInfo, ChatMessages
-from app.schemas.crud import add_chat, update_chat, get_chat_message_history_by_chat_id
+from app.schemas.crud import (
+    add_chat, 
+    update_chat, 
+    get_chat_message_history_by_chat_id,
+    get_chat_context_name_by_chat_id
+)
 from app.schemas.db_schemas import Chat
 from app.security.security_api import get_current_user
 
@@ -45,6 +50,7 @@ async def delete_chat_message_history(chat_id: int):
 @router.post('/send_question')
 async def send_user_question(chat_id: int, question: str) -> ChatMessages:
     message_history = await get_chat_message_history_by_chat_id(chat_id)
-    new_message_history = await get_new_message_history(question, message_history)
+    context_name = await get_chat_context_name_by_chat_id(chat_id)
+    new_message_history = await get_new_message_history(question, message_history, context_name)
     await update_chat(chat_id, {'message_history': new_message_history})
     return ChatMessages().from_get_message_history(new_message_history)

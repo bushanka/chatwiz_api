@@ -9,7 +9,17 @@ from app.models.user import AuthorisedUserInfo
 from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
 from app.status_messages import StatusMessage
 from draft import asession_maker
+from llm.apgvector import AsyncPgVector
+import os
 
+
+apgvector_instance = AsyncPgVector(
+        user = os.environ.get('POSTGRES_USER'),
+        password = os.environ.get('POSTGRES_PASSWORD'),
+        host = os.environ.get('POSTGRES_HOST'),
+        port = os.environ.get('POSTGRES_PORT'),
+        database = os.environ.get('POSTGRES_DBNAME')
+)
 
 async def email_exists(email: str) -> bool:
     async with asession_maker() as session:
@@ -122,6 +132,17 @@ async def get_user_contexts_from_db(user_id: int):
             ]
         )
 
+
+async def get_chat_context_name_by_chat_id(chat_id: int):
+    async with asession_maker() as session:
+        stmt_context_id = select(Chat.context_id).where(Chat.id == chat_id)
+        res_context_id = await session.execute(stmt_context_id)
+        res_context_id = res_context_id.first()[0]
+
+        stmt = select(Context.name).where(Context.id == res_context_id)
+        res = await session.execute(stmt)
+        res = res.first()[0]
+        return res
 
 
 
