@@ -11,6 +11,7 @@ from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
 from langchain.vectorstores.pgvector import PGVector
+from langchain.embeddings.openai import OpenAIEmbeddings
 
 
 class PyPDFBytesLoader(BaseLoader):
@@ -98,17 +99,17 @@ def process_pdf(filename, user_id):
     # FIXME: Uncomment on prod
 
     # print('perfoming tokenization')
-    # batchsize = 5000
-    # for i in range(0, len(docs), batchsize):
-    #     PGVector.from_documents(
-    #         embedding=OpenAIEmbeddings(),
-    #         documents=docs[i:i+batchsize],
-    #         collection_name=normalized_filename,
-    #         connection_string=CONNECTION_STRING,
-    #         )
+    batchsize = 5000
+    for i in range(0, len(docs), batchsize):
+        PGVector.from_documents(
+            embedding=OpenAIEmbeddings(),
+            documents=docs[i:i+batchsize],
+            collection_name=normalized_filename,
+            connection_string=CONNECTION_STRING,
+            )
     # print('done')
 
     # For test, simulates embedding docs
-    time.sleep(3)
+    # time.sleep(3)
 
     return f'{normalized_filename} loaded'

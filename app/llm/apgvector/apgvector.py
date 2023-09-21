@@ -1,21 +1,40 @@
 from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.docstore.document import Document
+from langchain.vectorstores.base import VectorStore, VectorStoreRetriever
+from langchain.embeddings.base import Embeddings
+
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 import asyncpg
 from pgvector.asyncpg import register_vector
 import numpy as np
-import time
 from typing import List
 import json
+from dotenv import load_dotenv
+load_dotenv()
 
-from app.llm.apgvector.test_embedd import test_embed
+VST = TypeVar("VST", bound="VectorStore")
 
 
-class AsyncPgVector:
+# from test_embedd import test_embed
+
+# FIXME: Мб лучше наследоваться от PgVectorStore в лангчейне?
+# FIXME: Нужно имплементировать различные функции тут, чтобы полноценно работать со всеми параметрами в лангчейне
+# FIXME: Например фильтры на score в документах, другие метрики расстояния....
+class AsyncPgVector(VectorStore):
     """
     The `AsyncPgVector` class is an implementation of asynchronous PostgreSQL vector retrieval for
     performing similarity searches on embedded vectors.
     """
+    _LANGCHAIN_DEFAULT_COLLECTION_NAME = "langchain"
 
     def __init__(
             self,
@@ -24,15 +43,18 @@ class AsyncPgVector:
             user,
             password,
             database,
-            embedding_function: OpenAIEmbeddings = OpenAIEmbeddings(),
+            embedding_function: Optional[Embeddings] = OpenAIEmbeddings(),
+            collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME
     ):
-        self.embedding_function = embedding_function
         self._connection_pool = None
+        self._name_search_collection = None
+        self.embedding_function = embedding_function
         self.host = host
         self.port = port
         self.user = user
         self.password = password
         self.database = database
+        self.collection_name = collection_name
 
     async def connect(self):
         if not self._connection_pool:
@@ -61,7 +83,24 @@ class AsyncPgVector:
 
         return docs
 
-    async def similarity_search(self, query: str, collection_name: str, k: int = 5) -> List[Document]:
+
+    def add_texts(self, texts: Iterable[str], metadatas: List[dict] | None = None, **kwargs: Any) -> List[str]:
+        return super().add_texts(texts, metadatas, **kwargs)
+
+    def from_texts(
+        cls: Type[VST],
+        texts: List[str],
+        embedding: Embeddings,
+        metadatas: Optional[List[dict]] = None,
+        **kwargs: Any,
+    ) -> VST:
+        return super().from_texts(cls, texts, embedding, metadatas, **kwargs)
+
+    async def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> List[Document]:
+        return super().similarity_search(query, k, **kwargs)
+
+
+    async def asimilarity_search(self, query: str, k: int = 4) -> List[Document]:
         '''
         The `similarity_search` function performs a similarity search by querying a collection of
         embeddings in a PostgreSQL database and returning the top k results based on the similarity to
@@ -89,6 +128,7 @@ class AsyncPgVector:
 
         '''
         assert self._connection_pool is not None, 'Connection pool is not established, call await cls.connect() first'
+        assert self._name_search_collection is not None, 'Name search collection is not defined, pass name in retriver kwarg'
 
         # TODO: uncomment in prod end delete test
         embedded_query = await self.embedding_function.aembed_query(query)
@@ -102,7 +142,7 @@ class AsyncPgVector:
                 FROM langchain_pg_collection
                 WHERE name = $1
                 ''',
-                collection_name
+                self._name_search_collection
             )
             try:
                 res = await connection.fetch(
@@ -122,7 +162,19 @@ class AsyncPgVector:
         return self.__convert_records_to_document(res)
 
 
+    def as_retriever(self, **kwargs: Any) -> VectorStoreRetriever:
+        self._name_search_collection = kwargs['name_search_collection']
+        return super().as_retriever(**kwargs)
+
+
 if __name__ == '__main__':
+    import os
+    import asyncio
+    from langchain.chains import RetrievalQA
+    from langchain.llms import OpenAI
+    import time
+
+
     async def test_time_proceeding():
         apg = AsyncPgVector(
             user=os.environ.get('POSTGRES_USER'),
@@ -134,18 +186,41 @@ if __name__ == '__main__':
 
         await apg.connect()
 
-        coros = [apg.similarity_search('стенды', '14-!CSORT.pdf') for _ in range(5)]
+        start = time.time()
+        retriever = apg.as_retriever(name_search_collection='4-!CSORT.pdf')
+        print(f'{time.time() - start} sec to init retriever')
 
         start = time.time()
-        a = await asyncio.gather(*coros)
-        print(f'{(time.time() - start):.5f} seconds')
-        return a
+        qa = RetrievalQA.from_chain_type(llm=OpenAI(temperature=1), chain_type="stuff", retriever=retriever)
+        print(f'{time.time() - start} sec to init qa chain')
+
+        query = "Как звучал сепаратор?"
+        start = time.time()
+        result = 'ЖОСКА'#await qa.arun(query)
+        print(f'{time.time() - start} sec to answer')
+        '''
+        What did the president say about Ketanji Brown Jackson?
+
+        The President said that Judge Ketanji Brown Jackson is one of the nation's top legal minds, 
+        a former top litigator in private practice, a former federal public defender, and from a 
+        family of public school educators and police officers. 
+        He said she is a consensus builder and has received a broad range of 
+        support from organizations such as the Fraternal Order of Police and 
+        former judges appointed by Democrats and Republicans.
 
 
-    import os
-    from dotenv import load_dotenv
-    import asyncio
+        Как звучал сепаратор?
+        Как орган
+        '''
+        print('\nfinal:\n', result)
 
-    load_dotenv()
+
+        # coros = [apg.similarity_search('стенды', '14-!CSORT.pdf') for _ in range(5)]
+
+        # start = time.time()
+        # a = await asyncio.gather(*coros)
+        # print(f'{(time.time() - start):.5f} seconds')
+        # return a
+
 
     asyncio.run(test_time_proceeding())

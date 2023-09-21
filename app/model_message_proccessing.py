@@ -1,45 +1,38 @@
 import json
 from typing import Any
 from app.schemas.crud import apgvector_instance
-import openai
-from app.llm.templates.prompt_template import qna_template
+from langchain.chains import RetrievalQA
+from langchain.chains import ConversationalRetrievalChain
+from langchain.llms import OpenAI
 import json
 
 
 async def mock_model_response(some_question: str) -> str:
     return f'The answer on "{some_question}" is : 42!'
 
+def convert_to_proper_chat_history(history):
+    dict_history = json.loads(history)
+    chat_history = dict_history['chat']
+    # Формат подачи историй в лангчейне [(query, result["answer"])]
+    # FIXME: Первый промпт system вообще не нужен получается))
+    converted_history = [(chat_history[i][1], chat_history[i + 1][1]) for i in range(1, len(chat_history) - 1, 2)]
+    return converted_history
 
 async def llm_model_response(user_question: str, message_history: dict, context_name: str) -> str:
-    res = await apgvector_instance.similarity_search(query=user_question, collection_name=context_name)
-
-
-    prompt_template_copy = qna_template.format(
-        context=res,
-        chat_history=message_history,
-        question=user_question
-    )
-    # TODO: Использовать langchain retriever или посмотреть как они делают и скопировать или написать AsyncPgVecotr в парадигме лангчейн либы
-    print()
-    print(prompt_template_copy)
-    print()
-    # TODO: Чекать юзер макс токенс
-    chat_completion_resp = await openai.ChatCompletion.acreate(
-        model="gpt-3.5-turbo", 
-        messages=[
-            {
-                "role": "user", 
-                "content": prompt_template_copy
-            },
-        ]
-    )
-
-    completion = chat_completion_resp.choices[0]
-    print()
-    print(completion)
-    print()
-    answer = str(completion['message']['content'])
-    return answer
+    retriever = apgvector_instance.as_retriever(name_search_collection=context_name)
+    qa = ConversationalRetrievalChain.from_llm(llm=OpenAI(temperature=0.3), chain_type="stuff", retriever=retriever)
+    # FIXME: Мб лучше сразу как-то нормально подавать данные ?
+    # FIXME: Как-то считать количество потраченных токенов, у нас там в лангчейне на самом деле не 1 запрос происходит
+    # FIXME: Записывать количество токенов в бд, чтобы считать сколько юзер потратил
+    # FIXME: Сделать конфиги, там очень много настроек в лангчейне, вплоть до промпта и тд
+    # FIXME: Возвращать сурсы через return_source_documents=True в ConversationalRetrievalChain
+    # TODO: По хорошему поиграть с параметрами лангчейна, иногда модель отвечает на английском и плохо, не улавливает прошлые сообщения
+    chat_history = convert_to_proper_chat_history(message_history)
+    result = await qa.arun({
+        "question": user_question,
+        "chat_history": chat_history
+    })
+    return result
 
 
 async def add_message_to_history(new_message: Any, message_history: str) -> str:
