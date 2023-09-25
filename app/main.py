@@ -1,18 +1,19 @@
 from fastapi import FastAPI, Depends
-from fastapi.responses import RedirectResponse
-from app.schemas.crud import apgvector_instance
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
-from app.security.security_api import get_current_user
 from app.routes import (
     authorization,
     registration,
     billing,
     context,
     refresh_access_token,
-    chats
+    chats,
+    password_change
 
 )
+from app.schemas.crud import apgvector_instance
+from app.security.security_api import get_current_user
 
 app = FastAPI()
 origins = ["*"]
@@ -30,6 +31,7 @@ app.include_router(refresh_access_token.router)
 app.include_router(billing.router, dependencies=[Depends(get_current_user)])
 app.include_router(context.router, dependencies=[Depends(get_current_user)])
 app.include_router(chats.router, dependencies=[Depends(get_current_user)])
+app.include_router(password_change.router, dependencies=[Depends(get_current_user)])
 
 
 @app.on_event("startup")

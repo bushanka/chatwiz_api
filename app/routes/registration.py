@@ -5,13 +5,14 @@
 import logging
 
 from fastapi import APIRouter, status
+from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
+from app.jwt_manager import JWTManager
+from app.password_hashing import password_encoder
 from app.schemas.crud import email_exists, add_user
 from app.schemas.db_schemas import User as UserTable
 from app.status_messages import StatusMessage
-from app.jwt_manager import JWTManager
-from pydantic import BaseModel
 
 logger = logging.getLogger("uvicorn")
 
@@ -37,7 +38,7 @@ class AuthResponse200(BaseModel):  # мб стоит это отсюда вын�
     }
 )
 async def register_user(email: str,
-                        hashed_password: str,
+                        password: str,
                         name: str,
                         surname: str) -> JSONResponse:
     if await email_exists(email):
@@ -45,7 +46,7 @@ async def register_user(email: str,
 
     new_user = UserTable(
         email=email,
-        hashed_password=hashed_password,
+        hashed_password=await password_encoder(password),
         name=name,
         surname=surname
     )
@@ -54,6 +55,7 @@ async def register_user(email: str,
     new_refresh_token = await JWTManager.create_refresh_token(email)
 
     await add_user(new_user)
+
     return AuthResponse200(
         status=StatusMessage.new_user_created.value,
         access_token=new_access_token,

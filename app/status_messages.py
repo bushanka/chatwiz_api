@@ -7,3 +7,4 @@ class StatusMessage(Enum):
     wrong_password = "Wrong password"
     user_exists = "User with such an email already exists"
     new_user_created = "User has been created"
+    password_changed = "Password has been changed"

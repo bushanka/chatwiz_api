@@ -1,27 +1,22 @@
 import asyncio
 import logging
 import os
-from typing import List
-import aiofiles
 
 import aioboto3
+import aiofiles
 from celery import Celery
 from celery.result import AsyncResult
 from dotenv import load_dotenv
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from fastapi.responses import FileResponse
-import tempfile
-
 from starlette import status
 from starlette.responses import JSONResponse
 
+from app.models.context import UserContextsInfo
 from app.models.user import AuthorisedUserInfo
 from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
-
-from app.models.context import UserContextsInfo
-
 
 app = Celery('chatwiztasks', broker=os.getenv('APP_BROKER_URI'), backend='rpc://')
 
@@ -62,22 +57,22 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     return 'OK'
 
 
-# @router.post(
-#     "/uploadfile/",
-#     responses={
-#         status.HTTP_200_OK: {
-#             "description": "Return OK if upload is successful"
-#         },
-#         status.HTTP_400_BAD_REQUEST: {
-#             "description": "Bad file given"
-#         },
-#         status.HTTP_504_GATEWAY_TIMEOUT: {
-#             "description": "File was not downloaded within the allotted time"
-#         }
-#     }
-# )
+@router.post(
+    "/uploadfile/",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Return OK if upload is successful"
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad file given"
+        },
+        status.HTTP_504_GATEWAY_TIMEOUT: {
+            "description": "File was not downloaded within the allotted time"
+        }
+    }
+)
 async def create_upload_file(file: UploadFile,
-                             user: AuthorisedUserInfo) -> int:
+                             user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
     # Get the file size (in bytes)
     sub_plan_info = await get_subscription_plan_info(user.subscription_plan_id)
 
@@ -99,7 +94,7 @@ async def create_upload_file(file: UploadFile,
 
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         await s3.upload_fileobj(file.file,
-                                'linkup-test-bucket',
+                                os.getenv('BUCKET_NAME'),
                                 str(user.id) + '-' + file.filename)
 
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
@@ -107,13 +102,14 @@ async def create_upload_file(file: UploadFile,
     logger.info(type(file.file))
 
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    # result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
             user_id=user.id,
             type=content_type,
             size=file_size,
-            path='linkup-test-bucket' + str(user.id) + '-' + file.filename
+            path=os.getenv('BUCKET_NAME') + str(user.id) + '-' + file.filename
         )
 
         await update_user(user_email=user.email,
@@ -150,9 +146,17 @@ async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)
 async def download_context(filename: str, user: AuthorisedUserInfo = Depends(get_current_user)):
     # Код для получения байтового объекта файла PDF
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
-        response = await s3.get_object(Bucket='linkup-test-bucket', Key=filename)
+        response = await s3.get_object(Bucket=os.getenv('BUCKET_NAME'), Key=filename)
         pdf_bytes = await response['Body'].read()
 
     async with aiofiles.tempfile.NamedTemporaryFile(delete=False) as temp_file:
         await temp_file.write(pdf_bytes)
         return FileResponse(temp_file.name, media_type='multipart/form-data', filename=filename)
+
+
+def change_context_name():  # todo
+    pass
+
+
+def delete_context():  # todo
+    pass

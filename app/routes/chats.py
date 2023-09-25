@@ -1,24 +1,22 @@
 import json
-from typing import Optional
 
 from fastapi import APIRouter, Depends, UploadFile
+from starlette import status
 
 from app.model_message_proccessing import get_new_message_history
 from app.models.chat import ChatInfo, ChatMessages, AllUserChats, ChatPdfInfo
-from app.schemas.crud import (
-    add_chat, 
-    update_chat, 
-    get_chat_message_history_by_chat_id,
-    get_chat_context_name_by_chat_id,
-    get_chatinfo_by_chat_id
-)
-from app.schemas.db_schemas import Chat
-from app.security.security_api import get_current_user
-from app.schemas.crud import get_user_chats_from_db
-from starlette import status
 from app.models.user import AuthorisedUserInfo
 from app.routes.context import create_upload_file
-
+from app.schemas.crud import (
+    add_chat,
+    update_chat,
+    get_chat_message_history_by_chat_id,
+    get_chat_context_name_by_chat_id,
+    get_chatinfo_by_chat_id, delete_chat
+)
+from app.schemas.crud import get_user_chats_from_db
+from app.schemas.db_schemas import Chat
+from app.security.security_api import get_current_user
 
 router = APIRouter(
     prefix="/chats",
@@ -34,11 +32,10 @@ base_message_history = json.dumps({
 
 @router.post('/start_new_chat', response_model=ChatInfo)
 async def start_new_chat(
-    chat_name: str,
-    file: UploadFile,
-    user=Depends(get_current_user)
+        chat_name: str,
+        file: UploadFile,
+        user=Depends(get_current_user)
 ) -> ChatInfo:
-
     context_id = await create_upload_file(file, user)
     new_chat = Chat(name=chat_name,
                     user_id=user.id,
@@ -66,6 +63,23 @@ async def send_user_question(chat_id: int, question: str) -> ChatMessages:
     return ChatMessages().from_get_message_history(new_message_history)
 
 
+@router.post('/change_chat_name/{chat_id}')
+async def change_chat_name(chat_id: int, new_name):  # todo
+    await update_chat(chat_id, {'name': new_name})
+
+
+@router.delete('/delete_chat/{chat_id}',
+               responses={
+                   status.HTTP_200_OK: {
+                       "description": "Chat has been deleted"
+                   },
+               }
+               )
+async def delete_chat_handle(chat_id: int):
+    await delete_chat(chat_id)
+    return 'ok' # todo
+
+
 @router.post(
     "/get_chats/",
     responses={
@@ -77,7 +91,6 @@ async def send_user_question(chat_id: int, question: str) -> ChatMessages:
 async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -> AllUserChats:
     user_chats = await get_user_chats_from_db(user.id)
     return user_chats
-
 
 
 @router.post(

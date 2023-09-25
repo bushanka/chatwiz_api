@@ -19,6 +19,7 @@ import numpy as np
 from typing import List
 import json
 from dotenv import load_dotenv
+
 load_dotenv()
 
 VST = TypeVar("VST", bound="VectorStore")
@@ -83,22 +84,20 @@ class AsyncPgVector(VectorStore):
 
         return docs
 
-
-    def add_texts(self, texts: Iterable[str], metadatas: List[dict] | None = None, **kwargs: Any) -> List[str]:
+    def add_texts(self, texts: Iterable[str], metadatas=None, **kwargs: Any) -> List[str]:
         return super().add_texts(texts, metadatas, **kwargs)
 
     def from_texts(
-        cls: Type[VST],
-        texts: List[str],
-        embedding: Embeddings,
-        metadatas: Optional[List[dict]] = None,
-        **kwargs: Any,
+            cls: Type[VST],
+            texts: List[str],
+            embedding: Embeddings,
+            metadatas: Optional[List[dict]] = None,
+            **kwargs: Any,
     ) -> VST:
         return super().from_texts(cls, texts, embedding, metadatas, **kwargs)
 
     async def similarity_search(self, query: str, k: int = 4, **kwargs: Any) -> List[Document]:
         return super().similarity_search(query, k, **kwargs)
-
 
     async def asimilarity_search(self, query: str, k: int = 4) -> List[Document]:
         '''
@@ -159,7 +158,6 @@ class AsyncPgVector(VectorStore):
 
         return self.__convert_records_to_document(res)
 
-
     def as_retriever(self, **kwargs: Any) -> VectorStoreRetriever:
         self._name_search_collection = kwargs['name_search_collection']
         return super().as_retriever(**kwargs)
@@ -194,7 +192,7 @@ if __name__ == '__main__':
 
         query = "Как звучал сепаратор?"
         start = time.time()
-        result = 'ЖОСКА'#await qa.arun(query)
+        result = 'ЖОСКА'  # await qa.arun(query)
         print(f'{time.time() - start} sec to answer')
         '''
         What did the president say about Ketanji Brown Jackson?
@@ -211,7 +209,6 @@ if __name__ == '__main__':
         Как орган
         '''
         print('\nfinal:\n', result)
-
 
         # coros = [apg.similarity_search('стенды', '14-!CSORT.pdf') for _ in range(5)]
 

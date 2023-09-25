@@ -1,25 +1,25 @@
+import os
 from typing import Any, Dict
 
-from sqlalchemy import text, select, update
+from sqlalchemy import text, select, update, delete
 
-from app.models.subscription_plan import SubscriptionPlanInfo
+from app.llm.apgvector import AsyncPgVector
+from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName
 from app.models.context import ContextInfo, UserContextsInfo
-from app.models.chat import AllUserChats, ChatInfo, ChatPdfInfo, ChatInfoIdName
+from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
 from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
 from app.status_messages import StatusMessage
 from draft import asession_maker
-from app.llm.apgvector import AsyncPgVector
-import os
-
 
 apgvector_instance = AsyncPgVector(
-        user = os.environ.get('POSTGRES_USER'),
-        password = os.environ.get('POSTGRES_PASSWORD'),
-        host = os.environ.get('POSTGRES_HOST'),
-        port = os.environ.get('POSTGRES_PORT'),
-        database = os.environ.get('POSTGRES_DBNAME')
+    user=os.environ.get('POSTGRES_USER'),
+    password=os.environ.get('POSTGRES_PASSWORD'),
+    host=os.environ.get('POSTGRES_HOST'),
+    port=os.environ.get('POSTGRES_PORT'),
+    database=os.environ.get('POSTGRES_DBNAME')
 )
+
 
 async def email_exists(email: str) -> bool:
     async with asession_maker() as session:
@@ -59,8 +59,7 @@ async def check_credentials(email: str, hashed_password: str) -> StatusMessage:
 async def get_user_info(email: str) -> AuthorisedUserInfo:
     async with asession_maker() as session:
         stmt = select(UserTable).where(UserTable.email == email)
-        res = await session.execute(stmt)
-        res = res.first()[0]
+        res = await session.scalar(stmt)
         return AuthorisedUserInfo(id=res.id,
                                   email=res.email,
                                   name=res.name,
@@ -75,8 +74,7 @@ async def get_user_info(email: str) -> AuthorisedUserInfo:
 async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlanInfo:
     async with asession_maker() as session:
         stmt = select(SubscriptionTable).where(SubscriptionTable.id == subscription_plan)
-        res = await session.execute(stmt)
-        res = res.first()[0]
+        res = await session.scalar(stmt)
         return SubscriptionPlanInfo(id=res.id,
                                     price=res.price,
                                     max_context_amount=res.max_context_amount,
@@ -146,7 +144,6 @@ async def get_chat_context_name_by_chat_id(chat_id: int):
         return res
 
 
-
 async def get_chatinfo_by_chat_id(chat_id: int):
     async with asession_maker() as session:
         stmt = select(Chat).where(Chat.id == chat_id)
@@ -176,6 +173,30 @@ async def get_user_chats_from_db(user_id: int):
                 ) for el in res
             ]
         )
+
+
+async def get_user_hashed_password(user_email: str) -> str:
+    async with asession_maker() as session:
+        stmt = select(UserTable.hashed_password).where(UserTable.email == user_email)
+        return await session.scalar(stmt)
+
+
+async def delete_user(user_email: str):
+    async with asession_maker() as session:
+        stmt = delete(UserTable).where(UserTable.email == user_email)
+        session.execute(stmt)
+
+
+async def delete_chat(chat_id: int):
+    async with asession_maker() as session:
+        stmt = delete(Chat).where(Chat.id == chat_id)
+        session.execute(stmt)
+
+
+async def delete_context(context_id: int):
+    async with asession_maker() as session:
+        stmt = delete(Context).where(Context.id == context_id)
+        session.execute(stmt)
 
 
 if __name__ == '__main__':
