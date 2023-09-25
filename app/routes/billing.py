@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+import asyncio
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, status, Depends
@@ -46,20 +47,26 @@ async def create_payment(subscription_plan_id: int, user: AuthorisedUserInfo = D
     indepotence_key = uuid.uuid4()
 
     # Create payment
-    payment = Payment.create({
-        "amount": {
-            "value": value,
-            "currency": "RUB"
-        },
-        "confirmation": {
-            "type": "embedded",
-        },
-        # TODO: Check what capture is
-        "capture": True,
-        "description": description,
-        "save_payment_method": True
-    }, indepotence_key)
+    payment_coros = asyncio.to_thread(
+        Payment.create,
+        {
+            "amount": {
+                "value": value,
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "embedded",
+            },
+            # TODO: Check what capture is
+            "capture": True,
+            "description": description,
+            "save_payment_method": True
+        }, 
+        indepotence_key
+    )
 
+    payment = await payment_coros
+    
     logger.info(f"Payment created {user}")
 
     # FIXME: Request to ORM to save payment_method, here we need user_token??

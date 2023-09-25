@@ -2,15 +2,17 @@
 Блок ручек по авторизации пользователя.
 """
 import logging
-from typing import Annotated  # мб тут требуется другой
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
+
 from pydantic import BaseModel
+from typing import Annotated
 
 from app.jwt_manager import JWTManager
 from app.schemas.crud import check_credentials
 from app.status_messages import StatusMessage
+
 
 logger = logging.getLogger("uvicorn")
 
