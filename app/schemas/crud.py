@@ -4,6 +4,7 @@ from sqlalchemy import text, select, update
 
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.context import ContextInfo, UserContextsInfo
+from app.models.chat import AllUserChats, ChatInfo, ChatPdfInfo, ChatInfoIdName
 from app.models.user import AuthorisedUserInfo
 from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
 from app.status_messages import StatusMessage
@@ -85,10 +86,12 @@ async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlan
                                     )
 
 
-async def add_context(context: Context):
+async def add_context(context: Context) -> Context:
     async with asession_maker() as session:
         session.add(context)
         await session.commit()
+        await session.refresh(context)
+        return context
 
 
 async def add_chat(chat: Chat):
@@ -142,6 +145,37 @@ async def get_chat_context_name_by_chat_id(chat_id: int):
         res = await session.scalar(stmt)
         return res
 
+
+
+async def get_chatinfo_by_chat_id(chat_id: int):
+    async with asession_maker() as session:
+        stmt = select(Chat).where(Chat.id == chat_id)
+        res = await session.execute(stmt)
+        res = res.first()[0]
+        cntx_id, msg_history = res.context_id, res.message_history
+
+        stmt = select(Context.name).where(Context.id == cntx_id)
+        cntx_name = await session.scalar(stmt)
+
+        return ChatPdfInfo(
+            message_history=msg_history,
+            pdf_url='http://viewer.lovelogo.ru/' + cntx_name
+        )
+
+
+async def get_user_chats_from_db(user_id: int):
+    async with asession_maker() as session:
+        stmt = select(Chat).where(Chat.user_id == user_id)
+        res = await session.execute(stmt)
+        res = res.fetchall()
+        return AllUserChats(
+            chats=[
+                ChatInfoIdName(
+                    id=el[0].id,
+                    name=el[0].name,
+                ) for el in res
+            ]
+        )
 
 
 if __name__ == '__main__':

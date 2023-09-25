@@ -22,6 +22,7 @@ from app.security.security_api import get_current_user
 
 from app.models.context import UserContextsInfo
 
+
 app = Celery('chatwiztasks', broker=os.getenv('APP_BROKER_URI'), backend='rpc://')
 
 load_dotenv()
@@ -61,22 +62,22 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     return 'OK'
 
 
-@router.post(
-    "/uploadfile/",
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Return OK if upload is successful"
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Bad file given"
-        },
-        status.HTTP_504_GATEWAY_TIMEOUT: {
-            "description": "File was not downloaded within the allotted time"
-        }
-    }
-)
+# @router.post(
+#     "/uploadfile/",
+#     responses={
+#         status.HTTP_200_OK: {
+#             "description": "Return OK if upload is successful"
+#         },
+#         status.HTTP_400_BAD_REQUEST: {
+#             "description": "Bad file given"
+#         },
+#         status.HTTP_504_GATEWAY_TIMEOUT: {
+#             "description": "File was not downloaded within the allotted time"
+#         }
+#     }
+# )
 async def create_upload_file(file: UploadFile,
-                             user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
+                             user: AuthorisedUserInfo) -> int:
     # Get the file size (in bytes)
     sub_plan_info = await get_subscription_plan_info(user.subscription_plan_id)
 
@@ -117,17 +118,12 @@ async def create_upload_file(file: UploadFile,
 
         await update_user(user_email=user.email,
                           new_values={'num_of_contexts': user.num_of_contexts + 1})
-        await add_context(context)
+        context_added = await add_context(context)
 
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content='OK'
-        )
+        return context_added.id
 
-    return JSONResponse(
-        status_code=status.HTTP_504_GATEWAY_TIMEOUT,
-        content='Time out'
-    )
+    else:
+        raise HTTPException(status_code=408, detail="Time out")
 
 
 @router.post(

@@ -28,7 +28,7 @@ class LoginResponse200(BaseModel):  # мб стоит это отсюда вын
 
 @router.post('/login',
              response_model=LoginResponse200)
-async def login(
+async def login(    
         form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     username = form_data.username
     password = form_data.password  # мб придется его тут хэшировать

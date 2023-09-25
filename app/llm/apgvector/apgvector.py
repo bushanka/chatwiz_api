@@ -130,9 +130,7 @@ class AsyncPgVector(VectorStore):
         assert self._connection_pool is not None, 'Connection pool is not established, call await cls.connect() first'
         assert self._name_search_collection is not None, 'Name search collection is not defined, pass name in retriver kwarg'
 
-        # TODO: uncomment in prod end delete test
         embedded_query = await self.embedding_function.aembed_query(query)
-        # embedded_query = test_embed
 
         async with self._connection_pool.acquire() as connection:
             await register_vector(connection)
