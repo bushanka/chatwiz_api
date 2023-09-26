@@ -57,20 +57,20 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     return 'OK'
 
 
-@router.post(
-    "/uploadfile/",
-    responses={
-        status.HTTP_200_OK: {
-            "description": "Return OK if upload is successful"
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            "description": "Bad file given"
-        },
-        status.HTTP_504_GATEWAY_TIMEOUT: {
-            "description": "File was not downloaded within the allotted time"
-        }
-    }
-)
+# @router.post(
+#     "/uploadfile/",
+#     responses={
+#         status.HTTP_200_OK: {
+#             "description": "Return OK if upload is successful"
+#         },
+#         status.HTTP_400_BAD_REQUEST: {
+#             "description": "Bad file given"
+#         },
+#         status.HTTP_504_GATEWAY_TIMEOUT: {
+#             "description": "File was not downloaded within the allotted time"
+#         }
+#     }
+# )
 async def create_upload_file(file: UploadFile,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
     # Get the file size (in bytes)
@@ -95,7 +95,9 @@ async def create_upload_file(file: UploadFile,
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         await s3.upload_fileobj(file.file,
                                 os.getenv('BUCKET_NAME'),
-                                str(user.id) + '-' + file.filename)
+                                str(user.id) + '-' + file.filename,
+                                ExtraArgs={'ContentType': 'application/pdf'}
+                                )
 
     # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
 

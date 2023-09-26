@@ -73,6 +73,8 @@ session = boto3.Session(
     aws_secret_access_key=os.getenv('BUCKET_SECRET_ACCESS_KEY')
 )
 
+BUCKET_NAME = os.getenv('BUCKET_NAME')
+
 
 @app.task(name='llm.tasks.process_pdf')
 def process_pdf(filename, user_id):
@@ -87,7 +89,7 @@ def process_pdf(filename, user_id):
     normalized_filename = str(user_id) + '-' + filename
 
     # Получить объект
-    get_object_response = s3.get_object(Bucket='linkup-test-bucket', Key=normalized_filename)
+    get_object_response = s3.get_object(Bucket=BUCKET_NAME, Key=normalized_filename)
     pdf_object = get_object_response['Body'].read()
 
     with io.BytesIO(pdf_object) as open_pdf_file:
