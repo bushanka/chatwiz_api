@@ -3,7 +3,7 @@ from typing import Any
 from app.schemas.crud import apgvector_instance
 from langchain.chains import RetrievalQA
 from langchain.chains import ConversationalRetrievalChain
-from langchain.llms import OpenAI
+from langchain.chat_models import ChatOpenAI
 import json
 
 
@@ -20,7 +20,11 @@ def convert_to_proper_chat_history(history):
 
 async def llm_model_response(user_question: str, message_history: dict, context_name: str) -> str:
     retriever = apgvector_instance.as_retriever(name_search_collection=context_name)
-    qa = ConversationalRetrievalChain.from_llm(llm=OpenAI(temperature=0.3), chain_type="stuff", retriever=retriever)
+    qa = ConversationalRetrievalChain.from_llm(
+        llm=ChatOpenAI(temperature=0.3, model='gpt-3.5-turbo'), 
+        chain_type="stuff", 
+        retriever=retriever
+    )
     # FIXME: Мб лучше сразу как-то нормально подавать данные ?
     # FIXME: Как-то считать количество потраченных токенов, у нас там в лангчейне на самом деле не 1 запрос происходит
     # FIXME: Записывать количество токенов в бд, чтобы считать сколько юзер потратил

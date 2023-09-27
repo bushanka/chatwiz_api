@@ -7,6 +7,7 @@ from pydantic import BaseModel, Json
 class ChatPdfInfo(BaseModel):
     message_history: Json
     pdf_url: str
+    chat_name: str
 
 
 class ChatInfo(BaseModel):

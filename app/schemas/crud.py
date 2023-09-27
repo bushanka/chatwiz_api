@@ -157,14 +157,15 @@ async def get_chatinfo_by_chat_id(chat_id: int):
         stmt = select(Chat).where(Chat.id == chat_id)
         res = await session.execute(stmt)
         res = res.first()[0]
-        cntx_id, msg_history = res.context_id, res.message_history
+        cntx_id, msg_history, chat_name = res.context_id, res.message_history, res.name
 
         stmt = select(Context.name).where(Context.id == cntx_id)
         cntx_name = await session.scalar(stmt)
 
         return ChatPdfInfo(
             message_history=msg_history,
-            pdf_url='http://viewer.lovelogo.ru/' + cntx_name
+            pdf_url='http://viewer.lovelogo.ru/' + cntx_name,
+            chat_name=chat_name
         )
 
 

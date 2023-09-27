@@ -4,7 +4,7 @@ import uuid
 import asyncio
 
 from dotenv import load_dotenv
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status, Depends, Query
 from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
 
@@ -35,7 +35,19 @@ router = APIRouter(
         },
     }
 )
-async def create_payment(subscription_plan_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> billing.CreatedPayment:
+async def create_payment(
+    subscription_plan_id: int = Query(..., description='''
+    +----+---------------+-------+
+    | ID |     Name      | Price |
+    +----+---------------+-------+
+    |  2 |     Basic     |  300  |
+    |  3 |      Pro      |  800  |
+    |  7 | Basic_yearly  | 3510  |
+    |  8 |  Pro_yearly   | 8640  |
+    +----+---------------+-------+
+    '''), 
+    user: AuthorisedUserInfo = Depends(get_current_user),
+) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
 
     subscription_plan = await get_subscription_plan_info(subscription_plan_id)
