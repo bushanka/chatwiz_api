@@ -14,9 +14,11 @@ from starlette.responses import JSONResponse
 
 from app.models.context import UserContextsInfo
 from app.models.user import AuthorisedUserInfo
-from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db
+from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db, \
+    delete_context
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
+from app.status_messages import StatusMessage
 
 app = Celery('chatwiztasks', broker=os.getenv('APP_BROKER_URI'), backend='rpc://')
 
@@ -101,8 +103,8 @@ async def create_upload_file(file: UploadFile,
 
     logger.info(type(file.file))
 
-    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-    # result = 'OK'
+    # result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
@@ -122,7 +124,7 @@ async def create_upload_file(file: UploadFile,
         raise HTTPException(status_code=408, detail="Time out")
 
 
-@router.post(
+@router.get(
     "/get_contexts/",
     responses={
         status.HTTP_200_OK: {
@@ -135,7 +137,7 @@ async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)
     return user_contexts
 
 
-@router.get(
+@router.post(
     "/download_context",
     responses={
         status.HTTP_200_OK: {
@@ -158,5 +160,16 @@ def change_context_name():  # todo
     pass
 
 
-def delete_context():  # todo
-    pass
+@router.delete('/delete_context/{context_id}',
+               responses={
+                   status.HTTP_200_OK: {
+                       "description": "Chat has been deleted"
+                   },
+               }
+               )
+async def delete_context_handle(context_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
+    if context_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user context')
+    await delete_context(context_id)
+    return JSONResponse(status_code=200, content=StatusMessage.context_deleted.value)
+    # todo удалять файл из хранилища

@@ -1,7 +1,8 @@
 import json
 
-from fastapi import APIRouter, Depends, UploadFile
+from fastapi import APIRouter, Depends, UploadFile, HTTPException
 from starlette import status
+from starlette.responses import JSONResponse
 
 from app.model_message_proccessing import get_new_message_history
 from app.models.chat import ChatInfo, ChatMessages, AllUserChats, ChatPdfInfo
@@ -17,6 +18,7 @@ from app.schemas.crud import (
 from app.schemas.crud import get_user_chats_from_db
 from app.schemas.db_schemas import Chat
 from app.security.security_api import get_current_user
+from app.status_messages import StatusMessage
 
 router = APIRouter(
     prefix="/chats",
@@ -50,12 +52,19 @@ async def start_new_chat(
 
 
 @router.post('/delete_chat_message_history')
-async def delete_chat_message_history(chat_id: int):
+async def delete_chat_message_history(chat_id: int,
+                                      user: AuthorisedUserInfo = Depends(get_current_user)):
+    if chat_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user chat')
     await update_chat(chat_id, {'message_history': base_message_history})
 
 
 @router.post('/send_question')
-async def send_user_question(chat_id: int, question: str) -> ChatMessages:
+async def send_user_question(chat_id: int,
+                             question: str,
+                             user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatMessages:
+    if chat_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user chat')
     message_history = await get_chat_message_history_by_chat_id(chat_id)
     context_name = await get_chat_context_name_by_chat_id(chat_id)
     new_message_history = await get_new_message_history(question, message_history, context_name)
@@ -63,9 +72,19 @@ async def send_user_question(chat_id: int, question: str) -> ChatMessages:
     return ChatMessages().from_get_message_history(new_message_history)
 
 
-@router.post('/change_chat_name/{chat_id}')
-async def change_chat_name(chat_id: int, new_name):  # todo
+@router.post('/change_chat_name/{chat_id}',
+             responses={
+                 status.HTTP_200_OK: {
+                     "description": "Chat has been renamed"
+                 },
+             }
+
+             )
+async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo = Depends(get_current_user)):
+    if chat_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user chat')
     await update_chat(chat_id, {'name': new_name})
+    return JSONResponse(status_code=200, content=StatusMessage.chat_name_changed.value)
 
 
 @router.delete('/delete_chat/{chat_id}',
@@ -75,9 +94,11 @@ async def change_chat_name(chat_id: int, new_name):  # todo
                    },
                }
                )
-async def delete_chat_handle(chat_id: int):
+async def delete_chat_handle(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
+    if chat_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user chat')
     await delete_chat(chat_id)
-    return 'ok' # todo
+    return JSONResponse(status_code=200, content=StatusMessage.chat_deleted.value)
 
 
 @router.post(
@@ -102,5 +123,7 @@ async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -
     }
 )
 async def get_user_chats(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatPdfInfo:
+    if chat_id not in user.context_ids:
+        raise HTTPException(status_code=403, detail='Not current user chat')
     user_chatinfo = await get_chatinfo_by_chat_id(chat_id)
     return user_chatinfo

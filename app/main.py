@@ -9,7 +9,8 @@ from app.routes import (
     context,
     refresh_access_token,
     chats,
-    password_change
+    password_change,
+    delete_account,
 
 )
 from app.schemas.crud import apgvector_instance
@@ -32,6 +33,7 @@ app.include_router(billing.router, dependencies=[Depends(get_current_user)])
 app.include_router(context.router, dependencies=[Depends(get_current_user)])
 app.include_router(chats.router, dependencies=[Depends(get_current_user)])
 app.include_router(password_change.router, dependencies=[Depends(get_current_user)])
+app.include_router(delete_account.router, dependencies=[Depends(get_current_user)])
 
 
 @app.on_event("startup")

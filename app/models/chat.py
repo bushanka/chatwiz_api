@@ -33,7 +33,5 @@ class ChatMessages(BaseModel):
     messages: List[ChatMessage] = []
 
     def from_get_message_history(self, message_history):
-        # print(f'1:\n\n{message_history}\n\n')
-        # print(f'2:\n\n{json.loads(message_history)}\n\n')
         self.messages = [ChatMessage(role=m[0], text=m[1]) for m in json.loads(message_history)['chat']]
         return self

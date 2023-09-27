@@ -17,7 +17,7 @@ router = APIRouter(
 )
 
 
-@router.post('/reset_password')
+@router.post('/')
 async def reset_password(old_password: str,
                          new_password: str,
                          user: AuthorisedUserInfo = Depends(get_current_user),

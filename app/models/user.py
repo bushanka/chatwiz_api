@@ -10,13 +10,8 @@ class AuthorisedUserInfo(BaseModel):
     surname: str
     # hashed_password: str
     # confirmed_registration: bool
+    context_ids: set = set()
+    chat_ids: set = set()
     num_of_requests_used: int
     num_of_contexts: int
     subscription_plan_id: int
-
-# class AuthorisedUsersInfo(BaseModel):
-#     users: List[AuthorisedUserInfo]
-
-
-# class AuthorisedUserToken(BaseModel):
-#     authorised_user_token: str

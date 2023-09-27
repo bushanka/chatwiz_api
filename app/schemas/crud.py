@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any, Dict
 
@@ -58,17 +59,24 @@ async def check_credentials(email: str, hashed_password: str) -> StatusMessage:
 
 async def get_user_info(email: str) -> AuthorisedUserInfo:
     async with asession_maker() as session:
-        stmt = select(UserTable).where(UserTable.email == email)
-        res = await session.scalar(stmt)
-        return AuthorisedUserInfo(id=res.id,
-                                  email=res.email,
-                                  name=res.name,
-                                  surname=res.surname,
+        usr_stmt = select(UserTable).where(UserTable.email == email)
+        usr = await session.scalar(usr_stmt)
+        chat_stmt = select(Chat.id).where(Chat.user_id == usr.id)
+        context_stmt = select(Context.id).where(Context.user_id == usr.id)
+        usr_chat_ids, usr_context_ids = await asyncio.gather(session.scalars(chat_stmt),
+                                                             session.scalars(context_stmt))
+
+        return AuthorisedUserInfo(id=usr.id,
+                                  email=usr.email,
+                                  name=usr.name,
+                                  surname=usr.surname,
+                                  context_ids=usr_context_ids,
+                                  chat_ids=usr_chat_ids,
                                   # hashed_password=res.hashed_password,
                                   # confirmed_registration=res.confirmed_registration,
-                                  num_of_requests_used=res.num_of_requests_used,
-                                  num_of_contexts=res.num_of_contexts,
-                                  subscription_plan_id=res.subscription_plan_id)
+                                  num_of_requests_used=usr.num_of_requests_used,
+                                  num_of_contexts=usr.num_of_contexts,
+                                  subscription_plan_id=usr.subscription_plan_id)
 
 
 async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlanInfo:
@@ -184,29 +192,32 @@ async def get_user_hashed_password(user_email: str) -> str:
 async def delete_user(user_email: str):
     async with asession_maker() as session:
         stmt = delete(UserTable).where(UserTable.email == user_email)
-        session.execute(stmt)
+        await session.execute(stmt)
+        await session.commit()
 
 
 async def delete_chat(chat_id: int):
     async with asession_maker() as session:
         stmt = delete(Chat).where(Chat.id == chat_id)
-        session.execute(stmt)
+        await session.execute(stmt)
+        await session.commit()
 
 
 async def delete_context(context_id: int):
     async with asession_maker() as session:
         stmt = delete(Context).where(Context.id == context_id)
-        session.execute(stmt)
+        await session.execute(stmt)
+        await session.commit()
 
 
 if __name__ == '__main__':
     # pass
-    import asyncio
-    import json
-    from draft_but_mine import get_sessionmaker
+    # import asyncio
 
-    asm = get_sessionmaker()
+    # from draft_but_mine import get_sessionmaker
+    #
+    # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
-    qwer = json.loads(asyncio.run(get_chat_message_history_by_chat_id(5)))
+    qwer = asyncio.run(delete_chat(31))
 
     print(qwer)
