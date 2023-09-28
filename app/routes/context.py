@@ -105,8 +105,8 @@ async def create_upload_file(file: UploadFile,
 
     logger.info(type(file.file))
 
-    # result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-    result = 'OK'
+    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    # result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,

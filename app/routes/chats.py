@@ -54,7 +54,7 @@ async def start_new_chat(
 @router.post('/delete_chat_message_history')
 async def delete_chat_message_history(chat_id: int,
                                       user: AuthorisedUserInfo = Depends(get_current_user)):
-    if chat_id not in user.context_ids:
+    if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     await update_chat(chat_id, {'message_history': base_message_history})
 
@@ -63,7 +63,7 @@ async def delete_chat_message_history(chat_id: int,
 async def send_user_question(chat_id: int,
                              question: str,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatMessages:
-    if chat_id not in user.context_ids:
+    if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     message_history = await get_chat_message_history_by_chat_id(chat_id)
     context_name = await get_chat_context_name_by_chat_id(chat_id)
@@ -81,7 +81,7 @@ async def send_user_question(chat_id: int,
 
              )
 async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo = Depends(get_current_user)):
-    if chat_id not in user.context_ids:
+    if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     await update_chat(chat_id, {'name': new_name})
     return JSONResponse(status_code=200, content=StatusMessage.chat_name_changed.value)
@@ -95,7 +95,7 @@ async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo
                }
                )
 async def delete_chat_handle(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
-    if chat_id not in user.context_ids:
+    if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     await delete_chat(chat_id)
     return JSONResponse(status_code=200, content=StatusMessage.chat_deleted.value)
@@ -123,7 +123,7 @@ async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -
     }
 )
 async def get_user_chats(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatPdfInfo:
-    if chat_id not in user.context_ids:
+    if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     user_chatinfo = await get_chatinfo_by_chat_id(chat_id)
     return user_chatinfo
