@@ -27,7 +27,6 @@ router = APIRouter(
 
 base_message_history = json.dumps({
     "chat": [
-        ["system", "You are a helpful AI bot."]
     ]
 })
 
