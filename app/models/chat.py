@@ -15,11 +15,13 @@ class ChatInfo(BaseModel):
     id: int
     name: str
     message_history: Json
+    context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
 
 
 class ChatInfoIdName(BaseModel):
     id: int
     name: str
+    context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
 
 
 class AllUserChats(BaseModel):
