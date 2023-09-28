@@ -164,7 +164,7 @@ async def get_chatinfo_by_chat_id(chat_id: int):
 
         return ChatPdfInfo(
             message_history=msg_history,
-            pdf_url='https://viewer.lovelogo.ru/' + cntx_name,
+            url='https://viewer.lovelogo.ru/' + cntx_name,
             chat_name=chat_name
         )
 
