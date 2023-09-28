@@ -6,7 +6,7 @@ from pydantic import BaseModel, Json
 
 class ChatPdfInfo(BaseModel):
     message_history: Json
-    pdf_url: str  # todo переименовать
+    url: str  # todo переименовать
     chat_name: str
     context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
 
