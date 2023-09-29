@@ -4,7 +4,7 @@
 
 import logging
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
@@ -13,6 +13,8 @@ from app.password_hashing import password_encoder
 from app.schemas.crud import email_exists, add_user
 from app.schemas.db_schemas import User as UserTable
 from app.status_messages import StatusMessage
+
+from email_validator import validate_email, EmailNotValidError
 
 logger = logging.getLogger("uvicorn")
 
@@ -40,10 +42,13 @@ class AuthResponse200(BaseModel):  # мб стоит это отсюда вын�
 async def register_user(email: str,
                         password: str,
                         name: str,
-                        surname: str) -> JSONResponse:
+                        surname: str):
     if await email_exists(email):
         return JSONResponse(status_code=422, content=StatusMessage.user_exists.value)
-
+    try:
+        email = validate_email(email).ascii_email
+    except EmailNotValidError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     new_user = UserTable(
         email=email,
         hashed_password=await password_encoder(password),

@@ -126,12 +126,12 @@ async def get_chat_message_history_by_chat_id(chat_id: int):
 
 async def get_user_context_by_id_from_db(context_id: int, user_id: int):
     async with asession_maker() as session:
-        stmt = select(Context).where(and_(Context.user_id == user_id, Context.id==context_id))
+        stmt = select(Context).where(and_(Context.user_id == user_id, Context.id == context_id))
         res = await session.execute(stmt)
         res = res.first()
         if res is None:
             return res
-            
+
         res = res[0]
         return ContextInfo(
             id=res.id,
@@ -142,10 +142,11 @@ async def get_user_context_by_id_from_db(context_id: int, user_id: int):
             path=res.path,
             # + 3 hours = Moscow time
             creation_date=datetime.datetime.strftime(
-                res.creation_date + datetime.timedelta(hours=3), 
+                res.creation_date + datetime.timedelta(hours=3),
                 "%d %b %Y %H:%M"
             )
         )
+
 
 async def get_user_contexts_from_db(user_id: int):
     async with asession_maker() as session:
@@ -163,7 +164,7 @@ async def get_user_contexts_from_db(user_id: int):
                     path=el[0].path,
                     # + 3 hours = Moscow time
                     creation_date=datetime.datetime.strftime(
-                        el[0].creation_date + datetime.timedelta(hours=3), 
+                        el[0].creation_date + datetime.timedelta(hours=3),
                         "%d %b %Y %H:%M"
                     )
                 ) for el in res
@@ -211,7 +212,7 @@ async def get_user_chats_from_db(user_id: int):
                     name=el[0].name,
                     # + 3 hours = Moscow time
                     creation_date=datetime.datetime.strftime(
-                        el[0].creation_date + datetime.timedelta(hours=3), 
+                        el[0].creation_date + datetime.timedelta(hours=3),
                         "%d %b %Y %H:%M"
                     )
                 ) for el in res

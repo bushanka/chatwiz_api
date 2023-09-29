@@ -14,6 +14,7 @@ from starlette.responses import JSONResponse
 
 from app.models.context import UserContextsInfo, ContextInfo
 from app.models.user import AuthorisedUserInfo
+from app.name_checkup import check_name_safety
 from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db, \
     delete_context, get_user_context_by_id_from_db
 from app.schemas.db_schemas import Context
@@ -77,6 +78,9 @@ async def create_upload_file(file: UploadFile,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
     # Get the file size (in bytes)
     sub_plan_info = await get_subscription_plan_info(user.subscription_plan_id)
+
+    if not check_name_safety(file.filename):
+        raise HTTPException(status_code=400, detail='File name must contain only [a-zA-Z0-9], -, _, /, \\ symbols')
 
     file.file.seek(0, 2)
     file_size = file.file.tell()
