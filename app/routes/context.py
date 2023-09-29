@@ -12,10 +12,10 @@ from fastapi.responses import FileResponse
 from starlette import status
 from starlette.responses import JSONResponse
 
-from app.models.context import UserContextsInfo
+from app.models.context import UserContextsInfo, ContextInfo
 from app.models.user import AuthorisedUserInfo
 from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db, \
-    delete_context
+    delete_context, get_user_context_by_id_from_db
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
 from app.status_messages import StatusMessage
@@ -113,7 +113,7 @@ async def create_upload_file(file: UploadFile,
             user_id=user.id,
             type=content_type,
             size=file_size,
-            path=os.getenv('BUCKET_NAME') + str(user.id) + '-' + file.filename
+            path='https://' + os.getenv('BUCKET_NAME') +'/' + str(user.id) + '-' + file.filename
         )
 
         await update_user(user_email=user.email,
@@ -137,6 +137,23 @@ async def create_upload_file(file: UploadFile,
 async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)) -> UserContextsInfo:
     user_contexts = await get_user_contexts_from_db(user.id)
     return user_contexts
+
+
+
+@router.get(
+    "/get_context_by_id/",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Return user context by id"
+        },
+    }
+)
+async def get_user_context_by_id(context_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ContextInfo:
+    user_context_by_id = await get_user_context_by_id_from_db(context_id, user.id)
+    if user_context_by_id:
+        return user_context_by_id
+    else:
+        raise HTTPException(status_code=403, detail=f'Context {context_id} user {user.id} does not exist')
 
 
 @router.post(

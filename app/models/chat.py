@@ -22,6 +22,7 @@ class ChatInfoIdName(BaseModel):
     id: int
     name: str
     context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
+    creation_date: str
 
 
 class AllUserChats(BaseModel):

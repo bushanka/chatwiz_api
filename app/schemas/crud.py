@@ -3,6 +3,8 @@ import os
 from typing import Any, Dict
 
 from sqlalchemy import text, select, update, delete
+from sqlalchemy.sql import and_
+import datetime
 
 from app.llm.apgvector import AsyncPgVector
 from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName
@@ -122,6 +124,29 @@ async def get_chat_message_history_by_chat_id(chat_id: int):
         return res
 
 
+async def get_user_context_by_id_from_db(context_id: int, user_id: int):
+    async with asession_maker() as session:
+        stmt = select(Context).where(and_(Context.user_id == user_id, Context.id==context_id))
+        res = await session.execute(stmt)
+        res = res.first()
+        if res is None:
+            return res
+            
+        res = res[0]
+        return ContextInfo(
+            id=res.id,
+            name=res.name,
+            user_id=res.user_id,
+            type=res.type,
+            size=res.size,
+            path=res.path,
+            # + 3 hours = Moscow time
+            creation_date=datetime.datetime.strftime(
+                res.creation_date + datetime.timedelta(hours=3), 
+                "%d %b %Y %H:%M"
+            )
+        )
+
 async def get_user_contexts_from_db(user_id: int):
     async with asession_maker() as session:
         stmt = select(Context).where(Context.user_id == user_id)
@@ -135,7 +160,12 @@ async def get_user_contexts_from_db(user_id: int):
                     user_id=el[0].user_id,
                     type=el[0].type,
                     size=el[0].size,
-                    path=el[0].path
+                    path=el[0].path,
+                    # + 3 hours = Moscow time
+                    creation_date=datetime.datetime.strftime(
+                        el[0].creation_date + datetime.timedelta(hours=3), 
+                        "%d %b %Y %H:%M"
+                    )
                 ) for el in res
             ]
         )
@@ -179,6 +209,11 @@ async def get_user_chats_from_db(user_id: int):
                 ChatInfoIdName(
                     id=el[0].id,
                     name=el[0].name,
+                    # + 3 hours = Moscow time
+                    creation_date=datetime.datetime.strftime(
+                        el[0].creation_date + datetime.timedelta(hours=3), 
+                        "%d %b %Y %H:%M"
+                    )
                 ) for el in res
             ]
         )

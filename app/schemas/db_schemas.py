@@ -1,6 +1,7 @@
 #  Модули, определяющие модели данных для вашей базы данных. 
 # Тут описываем наш ORM, такой как SQLAlchemy, для определения моделей данных.
-from sqlalchemy import Column, Integer, String, Float, JSON
+import datetime
+from sqlalchemy import Column, Integer, String, Float, JSON, DateTime
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -42,6 +43,7 @@ class Context(Base):
     type = Column(String(255), nullable=False, )
     size = Column(Float, nullable=False, )
     path = Column(String(255), nullable=False, )
+    creation_date = Column(DateTime, default=datetime.datetime.utcnow)
 
 
 class Chat(Base):
@@ -52,6 +54,7 @@ class Chat(Base):
     user_id = Column(Integer, nullable=False)
     context_id = Column(Integer, nullable=True)
     message_history = Column(JSON, nullable=False)
+    creation_date = Column(DateTime, default=datetime.datetime.utcnow)
 #
 #
 # class UserMessage(Base):

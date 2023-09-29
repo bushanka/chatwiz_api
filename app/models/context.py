@@ -9,6 +9,7 @@ class ContextInfo(BaseModel):
     type: str
     size: float
     path: str
+    creation_date: str
 
 
 class UserContextsInfo(BaseModel):
