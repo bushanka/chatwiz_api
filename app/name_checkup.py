@@ -9,4 +9,4 @@ def check_name_safety(name: str) -> bool:
     return bool(re.match(pattern, name))
 
 # if __name__ == '__main__':
-#     print(check_name_safety('concept.pdf'))
+#     print(check_name_safety('concept_1324.pdf'))
