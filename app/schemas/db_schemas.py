@@ -55,15 +55,11 @@ class Chat(Base):
     context_id = Column(Integer, nullable=True)
     message_history = Column(JSON, nullable=False)
     creation_date = Column(DateTime, default=datetime.datetime.utcnow)
-#
-#
-# class UserMessage(Base):
-#     id: int
-#     chat_id: str
-#     text: str
-#
-#
-# class AnswerMessage(Base):
-#     id: int
-#     user_message_id: int
-#     text: str
+
+
+class Feedback(Base):
+    __tablename__ = "feedbacks"
+
+    id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    comment_text = Column(String(1000), nullable=False)

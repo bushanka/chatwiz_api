@@ -23,7 +23,7 @@ def upgrade() -> None:
         'feedbacks',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('user_id', sa.Integer, nullable=False),
-        sa.Column('comment_text', sa.String(255), nullable=False)
+        sa.Column('comment_text', sa.String(1000), nullable=False)
     )
 
 

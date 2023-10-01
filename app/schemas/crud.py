@@ -11,7 +11,7 @@ from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName
 from app.models.context import ContextInfo, UserContextsInfo
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
-from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat
+from app.schemas.db_schemas import User as UserTable, SubscriptionPlan as SubscriptionTable, Context, Chat, Feedback
 from app.status_messages import StatusMessage
 from draft import asession_maker
 
@@ -245,6 +245,13 @@ async def delete_context(context_id: int):
         stmt = delete(Context).where(Context.id == context_id)
         await session.execute(stmt)
         await session.commit()
+
+
+async def add_feedback(feedback: Feedback):
+    async with asession_maker() as session:
+        session.add(feedback)
+        await session.commit()
+        return feedback
 
 
 if __name__ == '__main__':
