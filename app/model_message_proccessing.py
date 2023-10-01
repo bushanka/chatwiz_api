@@ -5,6 +5,8 @@ from langchain.chains import RetrievalQA
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
 import json
+import codecs
+import logging
 
 
 async def mock_model_response(some_question: str) -> str:
@@ -15,21 +17,23 @@ def convert_to_proper_chat_history(history):
     dict_history = json.loads(history)
     chat_history = dict_history['chat']
     # Формат подачи историй в лангчейне [(query, result["answer"])]
-    # FIXME: Первый промпт system вообще не нужен получается))
-    converted_history = [(chat_history[i][1], chat_history[i + 1][1]) for i in range(1, len(chat_history) - 1, 2)]
+    converted_history = [
+        (
+            codecs.escape_decode(chat_history[i][1])[0].decode('utf-8'), 
+            codecs.escape_decode(chat_history[i + 1][1])[0].decode('utf-8')
+        ) for i in range(0, len(chat_history) - 1, 2)
+    ]
     return converted_history
 
 
 async def llm_model_response(user_question: str, message_history: str, context_name: str) -> str:
+    user_question = codecs.escape_decode(user_question)[0].decode('utf-8')
     retriever = apgvector_instance.as_retriever(name_search_collection=context_name)
     qa = ConversationalRetrievalChain.from_llm(
         llm=ChatOpenAI(temperature=0.3, model='gpt-3.5-turbo'),
         chain_type="stuff",
         retriever=retriever
     )
-    # FIXME: Мб лучше сразу как-то нормально подавать данные ?
-    # FIXME: Как-то считать количество потраченных токенов, у нас там в лангчейне на самом деле не 1 запрос происходит
-    # FIXME: Записывать количество токенов в бд, чтобы считать сколько юзер потратил
     # FIXME: Сделать конфиги, там очень много настроек в лангчейне, вплоть до промпта и тд
     # FIXME: Возвращать сурсы через return_source_documents=True в ConversationalRetrievalChain
     # TODO: По хорошему поиграть с параметрами лангчейна, иногда модель отвечает на английском и плохо, не улавливает прошлые сообщения
@@ -38,6 +42,7 @@ async def llm_model_response(user_question: str, message_history: str, context_n
         "question": user_question,
         "chat_history": chat_history
     })
+    result = codecs.escape_decode(result)[0].decode('utf-8')
     return result
 
 
