@@ -14,7 +14,7 @@ args = {
 
 engine = create_async_engine(
     f"postgresql+asyncpg://{args['user']}:{args['password']}@{args['host']}/{args['dbname']}",
-    echo=True,
+    # echo=True,
 )
 
 asession_maker = async_sessionmaker(engine, expire_on_commit=False)

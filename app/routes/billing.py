@@ -13,7 +13,7 @@ from app.schemas.crud import get_subscription_plan_info
 from app.security.security_api import get_current_user
 from app.models.user import AuthorisedUserInfo
 
-logger = logging.getLogger("uvicorn")
+logger = logging.getLogger('gunicorn.error')
 
 load_dotenv()
 Configuration.account_id = os.getenv('YOKASSA_ACCOUNT_ID')
@@ -94,6 +94,7 @@ async def create_payment(
 
 @router.get('/hello_world')
 async def hello_world(user=Depends(get_current_user)) -> JSONResponse:
+    logger.debug(f'hello_world has been called by {user.id}')
     return JSONResponse(status_code=200, content=f'Hello {user.name}')
 
 
