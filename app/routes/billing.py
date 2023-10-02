@@ -1,15 +1,19 @@
-from fastapi import APIRouter, status
-from yookassa import Configuration, Payment
-from dotenv import load_dotenv
-
-import uuid
-import os
 import logging
+import os
+import uuid
+import asyncio
 
-from ..models import billing, user
+from dotenv import load_dotenv
+from fastapi import APIRouter, status, Depends, Query
+from starlette.responses import JSONResponse
+from yookassa import Configuration, Payment
 
+from app.models import billing
+from app.schemas.crud import get_subscription_plan_info
+from app.security.security_api import get_current_user
+from app.models.user import AuthorisedUserInfo
 
-logger = logging.getLogger("uvicorn")
+logger = logging.getLogger('gunicorn.error')
 
 load_dotenv()
 Configuration.account_id = os.getenv('YOKASSA_ACCOUNT_ID')
@@ -22,41 +26,62 @@ router = APIRouter(
 
 
 @router.post(
-        "/createpay/{user_token}",
-        status_code=status.HTTP_201_CREATED,
-        responses={
-            status.HTTP_201_CREATED: {
-                "model": billing.CreatedPayment, 
-                "description": "Create and return payment details"
-            },
-        }
+    "/createpay/",
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_201_CREATED: {
+            "model": billing.CreatedPayment,
+            "description": "Create and return payment details"
+        },
+    }
 )
-async def create_payment(user_token: str) -> billing.CreatedPayment:
+async def create_payment(
+    subscription_plan_id: int = Query(..., description='''
+    +----+---------------+-------+
+    | ID |     Name      | Price |
+    +----+---------------+-------+
+    |  2 |     Basic     |  300  |
+    |  3 |      Pro      |  800  |
+    |  7 | Basic_yearly  | 3510  |
+    |  8 |  Pro_yearly   | 8640  |
+    +----+---------------+-------+
+    '''), 
+    user: AuthorisedUserInfo = Depends(get_current_user),
+) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
-    value = '1500.00'
-    description = ' Order 1'
+
+    subscription_plan = await get_subscription_plan_info(subscription_plan_id)
+    print(subscription_plan)
+    value = subscription_plan.price
+    description = 'Order 1'
 
     # Generate unique payment key
     indepotence_key = uuid.uuid4()
 
     # Create payment
-    payment = Payment.create({
-        "amount": {
-            "value": value,
-            "currency": "RUB"
-        },
-        "confirmation": {
-            "type": "embedded",
-        },
-        # TODO: Check what capture is
-        "capture": True,
-        "description": description,
-        "save_payment_method": True
-    }, indepotence_key)
+    payment_coros = asyncio.to_thread(
+        Payment.create,
+        {
+            "amount": {
+                "value": value,
+                "currency": "RUB"
+            },
+            "confirmation": {
+                "type": "embedded",
+            },
+            # TODO: Check what capture is
+            "capture": True,
+            "description": description,
+            "save_payment_method": True
+        }, 
+        indepotence_key
+    )
 
-    logger.info(f"Payment created, user_token {user_token}")
+    payment = await payment_coros
+    
+    logger.info(f"Payment created {user}")
 
-    # FIXME: Request to ORM to save payment_method, here we nee user_token??
+    # FIXME: Request to ORM to save payment_method, here we need user_token??
 
     # FIXME: We need to periodically poll the Yukassa server to check the payment status - 
     # either we do it through celery or we need to set up a webhook
@@ -67,16 +92,30 @@ async def create_payment(user_token: str) -> billing.CreatedPayment:
     )
 
 
+@router.get('/hello_world')
+async def hello_world(user=Depends(get_current_user)) -> JSONResponse:
+    logger.debug(f'hello_world has been called by {user.id}')
+    return JSONResponse(status_code=200, content=f'Hello {user.name}')
+
+
+async def chek_payment():
+    pass
+
+
+async def confirm_purchase():
+    pass
+
+
 @router.post(
-        "/cancelsub/{user_id}",
-        responses={
-            status.HTTP_200_OK: {
-                "model": billing.CancelSubscription, 
-                "description": "Cancel user subscription"
-            },
-        }
+    "/cancelsub/",
+    responses={
+        status.HTTP_200_OK: {
+            "model": billing.CancelSubscription,
+            "description": "Cancel user subscription"
+        },
+    }
 )
-async def cancel_subscription(user_id: str):
+async def cancel_subscription(user: AuthorisedUserInfo = Depends(get_current_user)):
     # FIXME: Request to ORM to cancel subscription
 
     return billing.CancelSubscription(
