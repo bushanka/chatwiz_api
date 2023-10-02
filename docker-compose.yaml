@@ -21,7 +21,7 @@ services:
           "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
       ]
     environment:
-      APP_BROKER_URI: "amqp://rabbitmq"
+      APP_BROKER_URI: "amqp://rabbitmq:5673"
     depends_on:
       - rabbitmq
 
