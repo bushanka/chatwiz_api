@@ -19,8 +19,6 @@ services:
       [
           "celery", "-A", "app.llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue",
           "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
-          "celery", "-A", "app.llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue",
-          "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
       ]
     environment:
       APP_BROKER_URI: "amqp://rabbitmq"
