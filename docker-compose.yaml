@@ -6,12 +6,11 @@ services:
     image: chatwizapi
     command:
       [
-          "gunicorn", "-w 2", "-k uvicorn.workers.UvicornWorker",
-          "app.main:app",
-          "--bind", "0.0.0.0:8000"
+          "gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000"
       ]
+
     environment:
-      APP_BROKER_URI: "amqp://rabbitmq"
+      APP_BROKER_URI: "amqp://rabbitmq:5673"
     ports:
       - 8000:8000
 
@@ -19,26 +18,26 @@ services:
     image: chatwizapi
     command:
       [
-        "celery", "-A", "llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue", "--loglevel=INFO", "--hostname=chatwiz", "--autoscale=2,1"
+          "celery", "-A", "app.llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue",
+          "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
       ]
     environment:
-      APP_BROKER_URI: "amqp://rabbitmq"
+      APP_BROKER_URI: "amqp://rabbitmq:5673"
     depends_on:
       - rabbitmq
 
-  nginx:
-    image: nginx:latest
+  chatwizapi_nginx:
+    image: chatwiz_nginx
     ports:
       - 80:80
-#    volumes:
-#      - nginx_volume:/etc/nginx/conf.d/default.conf
+      - 443:443
     depends_on:
       - python_fastapi
-    
+
   rabbitmq:
     image: rabbitmq:3.12.4
     ports:
-      - 5672:5672
-      
+      - 5673:5672
+
 volumes:
   nginx_volume:

@@ -32,7 +32,8 @@ async def llm_model_response(user_question: str, message_history: str, context_n
     qa = ConversationalRetrievalChain.from_llm(
         llm=ChatOpenAI(temperature=0.3, model='gpt-3.5-turbo'),
         chain_type="stuff",
-        retriever=retriever
+        retriever=retriever,
+        verbose=True
     )
     # FIXME: Сделать конфиги, там очень много настроек в лангчейне, вплоть до промпта и тд
     # FIXME: Возвращать сурсы через return_source_documents=True в ConversationalRetrievalChain
