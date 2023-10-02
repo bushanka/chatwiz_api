@@ -43,6 +43,11 @@ app.include_router(feedback.router, dependencies=[Depends(get_current_user)])
 @app.on_event("startup")
 async def startup():
     await apgvector_instance.connect()
+    # gunicorn_logger = logging.getLogger('gunicorn.error')
+    # logger = logging.getLogger("uvicorn")
+    # handler = logging.handlers.RotatingFileHandler("api.log", mode="a", maxBytes=100 * 1024, backupCount=3)
+    # handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    # logger.addHandler(handler)
 
 
 @app.get("/", include_in_schema=False)
