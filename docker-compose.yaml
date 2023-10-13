@@ -9,7 +9,7 @@ services:
           "gunicorn", "-w", "2", "-k", "uvicorn.workers.UvicornWorker", "app.main:app", "--bind", "0.0.0.0:8000"
       ]
     environment:
-      APP_BROKER_URI: "amqp://rabbitmq:5673"
+      APP_BROKER_URI: "amqp://rabbitmq"
     ports:
       - 8000:8000
 
@@ -21,7 +21,7 @@ services:
           "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
       ]
     environment:
-      APP_BROKER_URI: "amqp://rabbitmq:5673"
+      APP_BROKER_URI: "amqp://rabbitmq"
     depends_on:
       - rabbitmq
 
@@ -36,7 +36,7 @@ services:
   rabbitmq:
     image: rabbitmq:3.12.4
     ports:
-      - 5673:5672
+      - 5672:5672
 
 volumes:
   nginx_volume:

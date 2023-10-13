@@ -79,8 +79,8 @@ BUCKET_NAME = os.getenv('BUCKET_NAME')
 @app.task(name='llm.tasks.process_pdf')
 def process_pdf(filename, user_id):
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=255,
-        chunk_overlap=20,
+        chunk_size=1000,
+        chunk_overlap=200,
         length_function=len,
         add_start_index=True
     )

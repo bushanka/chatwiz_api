@@ -28,9 +28,9 @@ def convert_to_proper_chat_history(history):
 
 async def llm_model_response(user_question: str, message_history: str, context_name: str) -> str:
     user_question = codecs.escape_decode(user_question)[0].decode('utf-8')
-    retriever = apgvector_instance.as_retriever(name_search_collection=context_name)
+    retriever = apgvector_instance.as_retriever(name_search_collection=context_name, k=2)
     qa = ConversationalRetrievalChain.from_llm(
-        llm=ChatOpenAI(temperature=0.3, model='gpt-3.5-turbo'),
+        llm=ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo'),
         chain_type="stuff",
         retriever=retriever,
         verbose=True
