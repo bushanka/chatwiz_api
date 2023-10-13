@@ -147,10 +147,11 @@ class AsyncPgVector(VectorStore):
                     SELECT * FROM langchain_pg_embedding
                     WHERE collection_id = $1
                     ORDER BY embedding <-> $2
-                    LIMIT 5
+                    LIMIT $3
                     ''',
                     row['uuid'],
-                    np.array(embedded_query)
+                    np.array(embedded_query),
+                    k
                 )
             except TypeError:
                 print(Exception("No document found"))
