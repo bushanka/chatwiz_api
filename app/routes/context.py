@@ -79,7 +79,7 @@ async def create_upload_file(file: UploadFile,
     # Get the file size (in bytes)
     if user.num_of_contexts >= user.max_context_size:
         raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
-    if user.action_points_used + int(os.getenv('FILE_UPLOAD')) >= user.max_action_points:
+    if user.action_points_used + int(os.getenv('FILE_UPLOAD')) > user.max_action_points:
         raise HTTPException(status_code=400, detail="Not enough action points to upload")
     if not check_name_safety(file.filename):
         raise HTTPException(status_code=400, detail='File name must contain only [a-zA-Z0-9], -, _, /, \\ symbols')
