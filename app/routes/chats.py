@@ -81,7 +81,6 @@ async def send_user_question(chat_id: int,
                      "description": "Chat has been renamed"
                  },
              }
-
              )
 async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo = Depends(get_current_user)):
     if chat_id not in user.chat_ids:
