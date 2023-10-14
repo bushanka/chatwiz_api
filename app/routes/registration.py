@@ -44,7 +44,9 @@ async def register_user(email: str,
                         name: str,
                         surname: str):
     if await email_exists(email):
-        return JSONResponse(status_code=422, content=StatusMessage.user_exists.value)
+        raise HTTPException(status_code=422, detail=StatusMessage.user_exists.value)
+    if len(password) <= 6:
+        raise HTTPException(status_code=422, detail=StatusMessage.password_too_short.value)
     try:
         email = validate_email(email).ascii_email
     except EmailNotValidError as e:
