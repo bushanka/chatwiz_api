@@ -156,7 +156,7 @@ async def get_user_context_by_id_from_db(context_id: int, user_id: int):
         )
 
 
-async def get_user_contexts_from_db(user_id: int):
+async def get_user_contexts_from_db(user_id: int) -> UserContextsInfo:
     async with asession_maker() as session:
         stmt = select(Context).where(Context.user_id == user_id)
         res = await session.execute(stmt)

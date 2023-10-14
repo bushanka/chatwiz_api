@@ -84,6 +84,10 @@ async def create_upload_file(file: UploadFile,
     if not check_name_safety(file.filename):
         raise HTTPException(status_code=400, detail='File name must contain only [a-zA-Z0-9], -, _, /, \\ symbols')
 
+    usr_contexts = await get_user_contexts_from_db(user_id=user.id)
+    if file.filename in {ctxt.name for ctxt in usr_contexts.contexts}:
+        raise HTTPException(status_code=400, detail='File with such a name already exists')
+
     file.file.seek(0, 2)
     file_size = file.file.tell()
 
