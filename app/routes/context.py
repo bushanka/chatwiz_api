@@ -192,6 +192,10 @@ def change_context_name():  # todo
 async def delete_context_handle(context_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
     if context_id not in user.context_ids:
         raise HTTPException(status_code=403, detail='Not current user context')
-    await delete_context(context_id)
+    context_name = await delete_context(context_id)
+    async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
+        await s3.delete_object(Key=context_name,
+                               Bucket=os.getenv('BUCKET_NAME'),
+                               )
     return JSONResponse(status_code=200, content=StatusMessage.context_deleted.value)
     # todo удалять файл из хранилища

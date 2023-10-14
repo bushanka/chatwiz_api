@@ -70,7 +70,7 @@ async def get_user_info(email: str) -> AuthorisedUserInfo:
                                                                                 session.scalars(context_stmt),
                                                                                 session.scalars(subscription_stmt))
         subscription_info = subscription_info.first()
-        usr_context_ids=usr_context_ids.fetchall()
+        usr_context_ids = usr_context_ids.fetchall()
         return AuthorisedUserInfo(id=usr.id,
                                   email=usr.email,
                                   name=usr.name,
@@ -185,7 +185,8 @@ async def get_chat_context_name_by_chat_id(chat_id: int):
         stmt_context_id = select(Chat.context_id).where(Chat.id == chat_id)
         res_context_id = await session.execute(stmt_context_id)
         res_context_id = res_context_id.first()[0]
-
+        if res_context_id is None:
+            return None
         stmt = select(Context.name).where(Context.id == res_context_id)
         res = await session.scalar(stmt)
         return res
@@ -250,9 +251,10 @@ async def delete_chat(chat_id: int):
 
 async def delete_context(context_id: int):
     async with asession_maker() as session:
-        stmt = delete(Context).where(Context.id == context_id)
-        await session.execute(stmt)
+        stmt = delete(Context).where(Context.id == context_id).returning(Context.name)
+        res = await session.scalar(stmt)
         await session.commit()
+        return res
 
 
 async def add_feedback(feedback: Feedback):
@@ -271,6 +273,6 @@ if __name__ == '__main__':
     #
     # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
-    qwer = asyncio.run(get_user_info('3'))
+    qwer = asyncio.run(get_user_info('111'))
 
     print(qwer)
