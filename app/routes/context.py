@@ -15,7 +15,7 @@ from starlette.responses import JSONResponse
 from app.models.context import UserContextsInfo, ContextInfo
 from app.models.user import AuthorisedUserInfo
 from app.name_checkup import check_name_safety
-from app.schemas.crud import get_subscription_plan_info, add_context, update_user, get_user_contexts_from_db, \
+from app.schemas.crud import add_context, update_user, get_user_contexts_from_db, \
     delete_context, get_user_context_by_id_from_db
 from app.schemas.db_schemas import Context
 from app.security.security_api import get_current_user
@@ -77,8 +77,10 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
 async def create_upload_file(file: UploadFile,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
     # Get the file size (in bytes)
-    sub_plan_info = await get_subscription_plan_info(user.subscription_plan_id)
-
+    if user.num_of_contexts >= user.max_context_size:
+        raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
+    if user.action_points_used + int(os.getenv('FILE_UPLOAD')) >= user.max_action_points:
+        raise HTTPException(status_code=400, detail="Not enough action points to upload")
     if not check_name_safety(file.filename):
         raise HTTPException(status_code=400, detail='File name must contain only [a-zA-Z0-9], -, _, /, \\ symbols')
 
@@ -87,10 +89,8 @@ async def create_upload_file(file: UploadFile,
 
     # move the cursor back to the beginning
     await file.seek(0)
-    if user.num_of_contexts >= sub_plan_info.max_context_size:
-        raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
 
-    if file_size > sub_plan_info.max_context_size * 1024 * 1024:
+    if file_size > user.max_context_size * 1024 * 1024:
         # more than 2 MB
         raise HTTPException(status_code=400, detail="File too large")
 
@@ -109,19 +109,19 @@ async def create_upload_file(file: UploadFile,
 
     logger.info(type(file.file))
 
-    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-    # result = 'OK'
+    # result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
             user_id=user.id,
             type=content_type,
             size=file_size,
-            path='https://' + os.getenv('BUCKET_NAME') +'/' + str(user.id) + '-' + file.filename
+            path='https://' + os.getenv('BUCKET_NAME') + '/' + str(user.id) + '-' + file.filename
         )
 
         await update_user(user_email=user.email,
-                          new_values={'num_of_contexts': user.num_of_contexts + 1})
+                          new_values={'action_points_used': user.action_points_used + int(os.getenv('FILE_UPLOAD'))})
         context_added = await add_context(context)
 
         return context_added.id
@@ -141,7 +141,6 @@ async def create_upload_file(file: UploadFile,
 async def get_user_contexts(user: AuthorisedUserInfo = Depends(get_current_user)) -> UserContextsInfo:
     user_contexts = await get_user_contexts_from_db(user.id)
     return user_contexts
-
 
 
 @router.get(

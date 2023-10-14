@@ -12,6 +12,10 @@ class AuthorisedUserInfo(BaseModel):
     # confirmed_registration: bool
     context_ids: set = set()
     chat_ids: set = set()
-    num_of_requests_used: int
+    action_points_used: int
     num_of_contexts: int
+    max_action_points: int
+    max_number_of_contexts: int
+    max_context_size: int
+    max_question_length: int
     subscription_plan_id: int

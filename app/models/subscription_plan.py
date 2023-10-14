@@ -8,3 +8,4 @@ class SubscriptionPlanInfo(BaseModel):
     name: str
     max_context_size: int
     max_question_length: int
+    max_action_points: int

@@ -1,4 +1,6 @@
+import asyncio
 import json
+import os
 
 from fastapi import APIRouter, Depends, UploadFile, HTTPException
 from starlette import status
@@ -13,7 +15,7 @@ from app.schemas.crud import (
     update_chat,
     get_chat_message_history_by_chat_id,
     get_chat_context_name_by_chat_id,
-    get_chatinfo_by_chat_id, delete_chat
+    get_chatinfo_by_chat_id, delete_chat, update_user
 )
 from app.schemas.crud import get_user_chats_from_db
 from app.schemas.db_schemas import Chat
@@ -64,6 +66,8 @@ async def send_user_question(chat_id: int,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatMessages:
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
+    if user.action_points_used + int(os.getenv('QUESTION_TO_MODEL')) <= user.max_action_points:
+        raise HTTPException(status_code=403, detail='Not enough action points')
     message_history = await get_chat_message_history_by_chat_id(chat_id)
     context_name = await get_chat_context_name_by_chat_id(chat_id)
     new_message_history = await get_new_message_history(question, message_history, context_name)
@@ -96,7 +100,7 @@ async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo
 async def delete_chat_handle(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
-    await delete_chat(chat_id)
+    await asyncio.gather(delete_chat(chat_id), update_user(user_email=user.email))
     return JSONResponse(status_code=200, content=StatusMessage.chat_deleted.value)
 
 
