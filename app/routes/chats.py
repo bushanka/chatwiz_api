@@ -75,7 +75,9 @@ async def send_user_question(chat_id: int,
         raise HTTPException(status_code=403, detail='Not enough action points')
     message_history = await get_chat_message_history_by_chat_id(chat_id)
     context_name = await get_chat_context_name_by_chat_id(chat_id)
-    new_message_history = await get_new_message_history(question, message_history, context_name)
+    new_message_history = await get_new_message_history(question[:user.max_question_length],
+                                                        message_history,
+                                                        context_name)
     await update_chat(chat_id, {'message_history': new_message_history})
     return ChatMessages().from_get_message_history(new_message_history)
 
