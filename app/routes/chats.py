@@ -1,6 +1,8 @@
 import asyncio
 import json
 import os
+import random
+from typing import Optional
 
 from fastapi import APIRouter, Depends, UploadFile, HTTPException
 from starlette import status
@@ -35,11 +37,14 @@ base_message_history = json.dumps({
 
 @router.post('/start_new_chat', response_model=ChatInfo)
 async def start_new_chat(
-        chat_name: str,
-        file: UploadFile,
+        file: Optional[UploadFile] = None,
         user=Depends(get_current_user)
 ) -> ChatInfo:
-    context_id = await create_upload_file(file, user)
+    if file is not None:
+        context_id = await create_upload_file(file, user)
+    else:
+        context_id = None
+    chat_name = "chat_#" + str(int(random.random() * 10000000))
     new_chat = Chat(name=chat_name,
                     user_id=user.id,
                     context_id=context_id,
