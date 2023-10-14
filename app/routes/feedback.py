@@ -5,19 +5,12 @@
 import logging
 
 from fastapi import APIRouter, status, HTTPException, Depends
-from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
-from app.jwt_manager import JWTManager
 from app.models.user import AuthorisedUserInfo
-from app.password_hashing import password_encoder
-from app.schemas.crud import email_exists, add_user, add_feedback
-from app.schemas.db_schemas import User as UserTable, Feedback
+from app.schemas.crud import add_feedback
+from app.schemas.db_schemas import Feedback
 from app.security.security_api import get_current_user
-from app.status_messages import StatusMessage
-
-from email_validator import validate_email, EmailNotValidError
-from enum import Enum
 
 logger = logging.getLogger("uvicorn")
 

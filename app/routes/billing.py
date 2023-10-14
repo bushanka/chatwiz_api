@@ -119,7 +119,7 @@ async def cancel_subscription(user: AuthorisedUserInfo = Depends(get_current_use
     # FIXME: Request to ORM to cancel subscription
 
     return billing.CancelSubscription(
-        user_id=user_id
+        user_id=user.id
     )
 
 # # NOTE: periodically check payment status

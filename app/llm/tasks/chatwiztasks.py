@@ -1,6 +1,5 @@
 import io
 import os
-import time
 from typing import List, Optional
 
 import boto3
@@ -9,9 +8,9 @@ from celery import Celery
 from dotenv import load_dotenv
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
 from langchain.vectorstores.pgvector import PGVector
-from langchain.embeddings.openai import OpenAIEmbeddings
 
 
 class PyPDFBytesLoader(BaseLoader):
@@ -105,10 +104,10 @@ def process_pdf(filename, user_id):
     for i in range(0, len(docs), batchsize):
         PGVector.from_documents(
             embedding=OpenAIEmbeddings(),
-            documents=docs[i:i+batchsize],
+            documents=docs[i:i + batchsize],
             collection_name=normalized_filename,
             connection_string=CONNECTION_STRING,
-            )
+        )
     # print('done')
 
     # For test, simulates embedding docs

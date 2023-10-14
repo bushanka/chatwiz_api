@@ -1,24 +1,21 @@
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.docstore.document import Document
-from langchain.vectorstores.base import VectorStore, VectorStoreRetriever
-from langchain.embeddings.base import Embeddings
-
+import json
 from typing import (
-    TYPE_CHECKING,
     Any,
     Iterable,
-    List,
     Optional,
     Type,
     TypeVar,
 )
+from typing import List
 
 import asyncpg
-from pgvector.asyncpg import register_vector
 import numpy as np
-from typing import List
-import json
 from dotenv import load_dotenv
+from langchain.docstore.document import Document
+from langchain.embeddings.base import Embeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores.base import VectorStore, VectorStoreRetriever
+from pgvector.asyncpg import register_vector
 
 load_dotenv()
 
