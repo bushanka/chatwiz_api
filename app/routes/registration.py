@@ -41,8 +41,8 @@ class AuthResponse200(BaseModel):  # мб стоит это отсюда вын�
 )
 async def register_user(email: str,
                         password: str,
-                        name: str,
-                        surname: str):
+                        name: str = "default_name",
+                        surname: str = "default_surname"):
     if await email_exists(email):
         raise HTTPException(status_code=422, detail=StatusMessage.user_exists.value)
     if len(password) <= 6:
