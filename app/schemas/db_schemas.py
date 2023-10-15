@@ -10,6 +10,9 @@ class Base(DeclarativeBase):
 
 
 class User(Base):
+    """
+    Table for storing users.
+    """
     __tablename__ = "users"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
@@ -18,11 +21,13 @@ class User(Base):
     name = Column(String(255), nullable=False)
     surname = Column(String(255), nullable=False)
     subscription_plan_id = Column(Integer, nullable=False, default=1)
-    num_of_requests_used = Column(Integer, nullable=False, default=0)
-    num_of_contexts = Column(Integer, nullable=False, default=0)
+    action_points_used = Column(Integer, nullable=False, default=0)
 
 
 class SubscriptionPlan(Base):
+    """
+    Table for storing subscription plans.
+    """
     __tablename__ = "subscription_plan"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
@@ -32,9 +37,13 @@ class SubscriptionPlan(Base):
     max_context_amount = Column(Integer, nullable=False)
     max_context_size = Column(Integer, nullable=False)
     max_question_length = Column(Integer, nullable=False)
+    max_action_points = Column(Integer, nullable=False)
 
 
 class Context(Base):
+    """
+    Table for storing contexts.
+    """
     __tablename__ = "contexts"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
@@ -47,6 +56,9 @@ class Context(Base):
 
 
 class Chat(Base):
+    """
+    Table for storing chats.
+    """
     __tablename__ = "chats"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
@@ -58,8 +70,14 @@ class Chat(Base):
 
 
 class Feedback(Base):
+    """
+    Table for storing feedbacks.
+    """
     __tablename__ = "feedbacks"
 
     id = Column(Integer, nullable=False, primary_key=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     comment_text = Column(String(1000), nullable=False)
+
+
+

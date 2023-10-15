@@ -65,9 +65,12 @@ async def get_user_info(email: str) -> AuthorisedUserInfo:
         usr = await session.scalar(usr_stmt)
         chat_stmt = select(Chat.id).where(Chat.user_id == usr.id)
         context_stmt = select(Context.id).where(Context.user_id == usr.id)
-        usr_chat_ids, usr_context_ids = await asyncio.gather(session.scalars(chat_stmt),
-                                                             session.scalars(context_stmt))
-
+        subscription_stmt = select(SubscriptionTable).where(SubscriptionTable.id == usr.subscription_plan_id)
+        usr_chat_ids, usr_context_ids, subscription_info = await asyncio.gather(session.scalars(chat_stmt),
+                                                                                session.scalars(context_stmt),
+                                                                                session.scalars(subscription_stmt))
+        subscription_info = subscription_info.first()
+        usr_context_ids = usr_context_ids.fetchall()
         return AuthorisedUserInfo(id=usr.id,
                                   email=usr.email,
                                   name=usr.name,
@@ -76,9 +79,14 @@ async def get_user_info(email: str) -> AuthorisedUserInfo:
                                   chat_ids=usr_chat_ids,
                                   # hashed_password=res.hashed_password,
                                   # confirmed_registration=res.confirmed_registration,
-                                  num_of_requests_used=usr.num_of_requests_used,
-                                  num_of_contexts=usr.num_of_contexts,
-                                  subscription_plan_id=usr.subscription_plan_id)
+                                  action_points_used=usr.action_points_used,
+                                  num_of_contexts=len(usr_context_ids),
+                                  max_action_points=subscription_info.max_action_points,
+                                  max_number_of_contexts=subscription_info.max_context_amount,
+                                  max_question_length=subscription_info.max_question_length,
+                                  max_context_size=subscription_info.max_context_size,
+                                  subscription_plan_id=usr.subscription_plan_id,
+                                  )
 
 
 async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlanInfo:
@@ -142,13 +150,13 @@ async def get_user_context_by_id_from_db(context_id: int, user_id: int):
             path=res.path,
             # + 3 hours = Moscow time
             creation_date=datetime.datetime.strftime(
-                res.creation_date + datetime.timedelta(hours=3),
+                res.creation_date + datetime.timedelta(hours=3),  # TODO это плохо, юзер может быть не из мск
                 "%d %b %Y %H:%M"
             )
         )
 
 
-async def get_user_contexts_from_db(user_id: int):
+async def get_user_contexts_from_db(user_id: int) -> UserContextsInfo:
     async with asession_maker() as session:
         stmt = select(Context).where(Context.user_id == user_id)
         res = await session.execute(stmt)
@@ -177,7 +185,8 @@ async def get_chat_context_name_by_chat_id(chat_id: int):
         stmt_context_id = select(Chat.context_id).where(Chat.id == chat_id)
         res_context_id = await session.execute(stmt_context_id)
         res_context_id = res_context_id.first()[0]
-
+        if res_context_id is None:
+            return None
         stmt = select(Context.name).where(Context.id == res_context_id)
         res = await session.scalar(stmt)
         return res
@@ -242,9 +251,10 @@ async def delete_chat(chat_id: int):
 
 async def delete_context(context_id: int):
     async with asession_maker() as session:
-        stmt = delete(Context).where(Context.id == context_id)
-        await session.execute(stmt)
+        stmt = delete(Context).where(Context.id == context_id).returning(Context.name)
+        res = await session.scalar(stmt)
         await session.commit()
+        return res
 
 
 async def add_feedback(feedback: Feedback):
@@ -258,10 +268,11 @@ if __name__ == '__main__':
     # pass
     # import asyncio
 
-    # from draft_but_mine import get_sessionmaker
+    from draft import asession_maker
+
     #
     # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
-    qwer = asyncio.run(delete_chat(31))
+    qwer = asyncio.run(get_user_info('111'))
 
     print(qwer)

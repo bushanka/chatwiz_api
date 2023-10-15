@@ -12,3 +12,4 @@ class StatusMessage(Enum):
     chat_deleted = "Chat has been deleted"
     context_deleted = "Context has been deleted"
     user_deleted = "User has been deleted"
+    password_too_short = "Password is too short"
