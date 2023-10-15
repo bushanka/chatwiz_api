@@ -7,7 +7,7 @@ from sqlalchemy.sql import and_
 import datetime
 
 from app.llm.apgvector import AsyncPgVector
-from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName
+from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName, ChatNoPdfInfo
 from app.models.context import ContextInfo, UserContextsInfo
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
@@ -202,11 +202,18 @@ async def get_chatinfo_by_chat_id(chat_id: int):
         stmt = select(Context.name).where(Context.id == cntx_id)
         cntx_name = await session.scalar(stmt)
 
-        return ChatPdfInfo(
-            message_history=msg_history,
-            url='https://viewer.lovelogo.ru/' + cntx_name,
-            chat_name=chat_name
-        )
+        if cntx_name:
+            return ChatPdfInfo(
+                message_history=msg_history,
+                url='https://viewer.lovelogo.ru/' + cntx_name,
+                chat_name=chat_name
+            )
+        else:
+            return ChatNoPdfInfo(
+                message_history=msg_history,
+                url='',
+                chat_name=chat_name
+            )
 
 
 async def get_user_chats_from_db(user_id: int):

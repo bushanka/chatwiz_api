@@ -11,6 +11,12 @@ class ChatPdfInfo(BaseModel):
     context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
 
 
+class ChatNoPdfInfo(BaseModel):
+    message_history: Json
+    chat_name: str
+    url: str
+
+
 class ChatInfo(BaseModel):
     id: int
     name: str
