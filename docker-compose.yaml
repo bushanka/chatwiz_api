@@ -46,6 +46,3 @@ services:
       POSTGRES_PASSWORD: "11111111"
     ports:
       - "5432:5432"
-
-volumes:
-  nginx_volume:
