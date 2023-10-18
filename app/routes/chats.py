@@ -9,7 +9,7 @@ from starlette import status
 from starlette.responses import JSONResponse
 
 from app.model_message_proccessing import get_new_message_history
-from app.models.chat import ChatInfo, ChatMessages, AllUserChats, ChatPdfInfo
+from app.models.chat import ChatInfo, ChatMessages, AllUserChats
 from app.models.user import AuthorisedUserInfo
 from app.routes.context import create_upload_file
 from app.schemas.crud import (
@@ -41,9 +41,10 @@ async def start_new_chat(
         user=Depends(get_current_user)
 ) -> ChatInfo:
     if file is not None:
-        context_id = await create_upload_file(file, user)
+        context = await create_upload_file(file, user)
+        context_type, context_id = context.type, context.id
     else:
-        context_id = None
+        context_type = context_id = None
     chat_name = "chat_#" + str(int(random.random() * 10000000))
     new_chat = Chat(name=chat_name,
                     user_id=user.id,
@@ -52,7 +53,8 @@ async def start_new_chat(
     new_chat_with_id = await add_chat(new_chat)
     chat_info_to_be_returned = ChatInfo(id=new_chat_with_id.id,
                                         name=new_chat_with_id.name,
-                                        message_history=new_chat_with_id.message_history
+                                        message_history=new_chat_with_id.message_history,
+                                        context_type=context_type
                                         )
     return chat_info_to_be_returned
 
@@ -71,7 +73,7 @@ async def send_user_question(chat_id: int,
                              user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatMessages:
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
-    if user.action_points_used + int(os.getenv('QUESTION_TO_MODEL')) <= user.max_action_points:
+    if user.action_points_used + int(os.getenv('QUESTION_TO_MODEL')) >= user.max_action_points:
         raise HTTPException(status_code=403, detail='Not enough action points')
     message_history = await get_chat_message_history_by_chat_id(chat_id)
     context_name = await get_chat_context_name_by_chat_id(chat_id)
@@ -79,6 +81,8 @@ async def send_user_question(chat_id: int,
                                                         message_history,
                                                         context_name)
     await update_chat(chat_id, {'message_history': new_message_history})
+    await update_user(user_email=user.email,
+                      new_values={'action_points_used': user.action_points_used + int(os.getenv('QUESTION_TO_MODEL'))})
     return ChatMessages().from_get_message_history(new_message_history)
 
 
@@ -106,11 +110,11 @@ async def change_chat_name(chat_id: int, new_name: str, user: AuthorisedUserInfo
 async def delete_chat_handle(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)):
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
-    await asyncio.gather(delete_chat(chat_id), update_user(user_email=user.email))
+    await asyncio.gather(delete_chat(chat_id))  # TODO вспомнить, что тут еще
     return JSONResponse(status_code=200, content=StatusMessage.chat_deleted.value)
 
 
-@router.post(
+@router.get(
     "/get_chats/",
     responses={
         status.HTTP_200_OK: {
@@ -123,7 +127,7 @@ async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -
     return user_chats
 
 
-@router.post(
+@router.get(
     "/get_chatinfo/",
     responses={
         status.HTTP_200_OK: {
@@ -131,7 +135,7 @@ async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -
         },
     }
 )
-async def get_user_chats(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatPdfInfo:
+async def get_user_chats(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatInfo:
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     user_chatinfo = await get_chatinfo_by_chat_id(chat_id)

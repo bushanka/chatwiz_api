@@ -1,32 +1,23 @@
 import json
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Json
 
 
-class ChatPdfInfo(BaseModel):
-    message_history: Json
-    url: str  # todo переименовать
-    chat_name: str
-    context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
-
-
 class ChatInfo(BaseModel):
-    id: int
-    name: str
+    chat_id: int
+    chat_name: str
     message_history: Json
-    context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
-
-
-class ChatInfoIdName(BaseModel):
-    id: int
-    name: str
-    context_type: str = 'pdf'  # 'pdf' | 'video' | 'site'
+    context_type: Optional[str] = 'pdf'  # 'pdf' | 'video' | 'site'
     creation_date: str
 
 
+class ChatInfoWithContextUrl(ChatInfo):
+    context_url: str
+
+
 class AllUserChats(BaseModel):
-    chats: List[ChatInfoIdName]
+    chats: List[ChatInfo]
 
 
 class ChatMessage(BaseModel):

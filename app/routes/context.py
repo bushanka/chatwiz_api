@@ -75,7 +75,7 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
 #     }
 # )
 async def create_upload_file(file: UploadFile,
-                             user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
+                             user: AuthorisedUserInfo = Depends(get_current_user)) -> Context:
     # Get the file size (in bytes)
     if user.num_of_contexts >= user.max_context_size:
         raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
@@ -113,8 +113,8 @@ async def create_upload_file(file: UploadFile,
 
     logger.info(type(file.file))
 
-    # result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-    result = 'OK'
+    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    # result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
@@ -128,7 +128,7 @@ async def create_upload_file(file: UploadFile,
                           new_values={'action_points_used': user.action_points_used + int(os.getenv('FILE_UPLOAD'))})
         context_added = await add_context(context)
 
-        return context_added.id
+        return context_added
 
     else:
         raise HTTPException(status_code=408, detail="Time out")
@@ -202,4 +202,3 @@ async def delete_context_handle(context_id: int, user: AuthorisedUserInfo = Depe
                                Bucket=os.getenv('BUCKET_NAME'),
                                )
     return JSONResponse(status_code=200, content=StatusMessage.context_deleted.value)
-    # todo удалять файл из хранилища

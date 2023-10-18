@@ -38,5 +38,14 @@ services:
     ports:
       - 5672:5672
 
+  db:
+    image: postgres:13.3
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "11111111"
+    ports:
+      - "5432:5432"
+
 volumes:
   nginx_volume:

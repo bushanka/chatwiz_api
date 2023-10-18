@@ -29,7 +29,7 @@ async def llm_model_response(user_question: str, message_history: str, context_n
     user_question = codecs.escape_decode(user_question)[0].decode('utf-8')
     chat_history = convert_to_proper_chat_history(message_history)
     if context_name is None:
-        pass
+        return f'The answer on "{user_question}" is : "FUCK U".'
         # qa = ChatOpenAI()._agenerate(messages=chat_history)
     retriever = apgvector_instance.as_retriever(name_search_collection=context_name, k=2)
     qa = ConversationalRetrievalChain.from_llm(
