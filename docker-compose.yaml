@@ -39,7 +39,7 @@ services:
       - 5672:5672
 
   db:
-    image: postgres:13.3
+    image: ankane/pgvector
     environment:
       POSTGRES_DB: "postgres"
       POSTGRES_USER: "postgres"
