@@ -70,6 +70,7 @@ async def delete_chat_message_history(chat_id: int,
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     await update_chat(chat_id, {'message_history': base_message_history})
+    return JSONResponse(status_code=200, content='Success')
 
 
 @router.post('/send_question')
