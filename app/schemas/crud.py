@@ -7,7 +7,8 @@ from sqlalchemy.sql import and_
 import datetime
 
 from app.llm.apgvector import AsyncPgVector
-from app.models.chat import AllUserChats, ChatInfo, ChatInfoWithContextUrl
+from app.models.chat import AllUserChats, ChatInfo, ChatWithMessagesAndContextUrl, ChatWithMessages, \
+    ChatWithMessagesAndContextUrl
 from app.models.context import ContextInfo, UserContextsInfo
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
@@ -132,7 +133,7 @@ async def get_chat_message_history_by_chat_id(chat_id: int):
         return res
 
 
-async def get_user_context_by_id_from_db(context_id: int, user_id: int):
+async def get_user_context_by_id_from_db(context_id: int, user_id: int) -> ContextInfo:
     async with asession_maker() as session:
         stmt = select(Context).where(and_(Context.user_id == user_id, Context.id == context_id))
         res = await session.execute(stmt)
@@ -150,7 +151,8 @@ async def get_user_context_by_id_from_db(context_id: int, user_id: int):
             path=res.path,
             # + 3 hours = Moscow time
             creation_date=datetime.datetime.strftime(
-                res.creation_date + datetime.timedelta(hours=3),  # TODO это плохо, юзер может быть не из мск
+                res.creation_date + datetime.timedelta(hours=3),
+                # TODO это плохо, юзер может быть не из мск (это дефолтное значение к тому же)
                 "%d %b %Y %H:%M"
             )
         )
@@ -200,20 +202,20 @@ async def get_chatinfo_by_chat_id(chat_id: int):
         stmt = select(Context).where(Context.id == res.context_id)
         context = await session.scalar(stmt)
 
-        if context.name is None:
-            return ChatInfo(
+        if context is None:
+            return ChatWithMessages(
                 chat_id=chat_id,
                 chat_name=res.name,
                 message_history=res.message_history,
-                creation_date=res.creation_date
+                creation_date=str(res.creation_date)
             )
         else:
-            return ChatInfoWithContextUrl(
+            return ChatWithMessagesAndContextUrl(
                 chat_id=chat_id,
                 chat_name=res.name,
                 message_history=res.message_history,
                 context_type=context.type,
-                creation_date=res.creation_date,
+                creation_date=str(res.creation_date),
                 context_url='https://viewer.lovelogo.ru/' + context.name,
 
             )
@@ -227,14 +229,13 @@ async def get_user_chats_from_db(user_id: int) -> AllUserChats:
         return AllUserChats(
             chats=[
                 ChatInfo(
-                    id=el[0].id,
-                    name=el[0].name,
-                    # + 3 hours = Moscow time
+                    chat_id=el[0].id,
+                    chat_name=el[0].name,
                     creation_date=datetime.datetime.strftime(
                         el[0].creation_date + datetime.timedelta(hours=3),  # todo это плохо, юзер может быть не из мс
                         "%d %b %Y %H:%M"
                     ),
-                    context_type='pdf'  # todo подумать, как сюда по-умному прокидывать(надо ли)
+                    context_type='pdf',  # todo подумать, как сюда по-умному прокидывать(надо ли)
                 ) for el in res
             ]
         )
@@ -279,7 +280,7 @@ if __name__ == '__main__':
     # pass
     # import asyncio
 
-    from draft import asession_maker
+    # from draft import asession_maker
 
     #
     # asm = get_sessionmaker()

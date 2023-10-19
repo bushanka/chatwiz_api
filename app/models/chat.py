@@ -7,12 +7,15 @@ from pydantic import BaseModel, Json
 class ChatInfo(BaseModel):
     chat_id: int
     chat_name: str
-    message_history: Json
     context_type: Optional[str] = 'pdf'  # 'pdf' | 'video' | 'site'
     creation_date: str
 
 
-class ChatInfoWithContextUrl(ChatInfo):
+class ChatWithMessages(ChatInfo):
+    message_history: Json
+
+
+class ChatWithMessagesAndContextUrl(ChatWithMessages):
     context_url: str
 
 

@@ -6,6 +6,7 @@ import os
 load_dotenv()
 args = {
     "host": os.getenv("POSTGRES_HOST"),
+    "db_port":os.getenv("POSTGRES_PORT"),
     "user": os.getenv("POSTGRES_USER"),
     "password": os.getenv("POSTGRES_PASSWORD"),
     "dbname": os.getenv("POSTGRES_DBNAME"),
@@ -13,7 +14,7 @@ args = {
 }
 
 engine = create_async_engine(
-    f"postgresql+asyncpg://{args['user']}:{args['password']}@{args['host']}/{args['dbname']}",
+    f"postgresql+asyncpg://{args['user']}:{args['password']}@{args['host']}:{args['db_port']}/{args['dbname']}",
     # echo=True,
 )
 
