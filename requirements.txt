@@ -27,3 +27,4 @@ pgvector
 openai
 tiktoken
 email_validator
+psycopg2-binary
