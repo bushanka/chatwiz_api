@@ -2,6 +2,7 @@ import asyncio
 import os
 from typing import Any, Dict
 
+from pydantic import TypeAdapter
 from sqlalchemy import text, select, update, delete
 from sqlalchemy.sql import and_
 import datetime
@@ -99,8 +100,17 @@ async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlan
                                     max_context_amount=res.max_context_amount,
                                     name=res.name,
                                     max_context_size=res.max_context_size,
-                                    max_question_length=res.max_question_length
+                                    max_question_length=res.max_question_length,
+                                    max_action_points=res.max_action_points,
                                     )
+
+
+async def get_paid_subscription_plans_info() -> list[SubscriptionPlanInfo]:
+    async with asession_maker() as session:
+        stmt = select(SubscriptionTable).where(SubscriptionTable.id != 1)  # id=1 - free plan
+        res = await session.scalars(stmt)
+        res = res.fetchall()
+        return TypeAdapter(list[SubscriptionPlanInfo]).validate_python(res)
 
 
 async def add_context(context: Context) -> Context:
@@ -285,6 +295,7 @@ if __name__ == '__main__':
     #
     # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
-    qwer = asyncio.run(get_user_info('111'))
+    # qwer = asyncio.run(get_subscription_plan_info(1))
+    qwer = asyncio.run(get_paid_subscription_plans_info())
 
     print(qwer)
