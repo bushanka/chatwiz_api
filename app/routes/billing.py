@@ -9,7 +9,8 @@ from starlette.responses import JSONResponse
 from yookassa import Configuration, Payment
 
 from app.models import billing
-from app.schemas.crud import get_subscription_plan_info
+from app.models.subscription_plan import SubscriptionPlanInfo
+from app.schemas.crud import get_subscription_plan_info, get_paid_subscription_plans_info
 from app.security.security_api import get_current_user
 from app.models.user import AuthorisedUserInfo
 
@@ -36,7 +37,7 @@ router = APIRouter(
     }
 )
 async def create_payment(
-    subscription_plan_id: int = Query(..., description='''
+        subscription_plan_id: int = Query(..., description='''
     +----+---------------+-------+
     | ID |     Name      | Price |
     +----+---------------+-------+
@@ -45,8 +46,8 @@ async def create_payment(
     |  7 | Basic_yearly  | 3510  |
     |  8 |  Pro_yearly   | 8640  |
     +----+---------------+-------+
-    '''), 
-    user: AuthorisedUserInfo = Depends(get_current_user),
+    '''),
+        user: AuthorisedUserInfo = Depends(get_current_user),
 ) -> billing.CreatedPayment:
     # FIXME: Request to db via ORM to get price
 
@@ -73,12 +74,12 @@ async def create_payment(
             "capture": True,
             "description": description,
             "save_payment_method": True
-        }, 
+        },
         indepotence_key
     )
 
     payment = await payment_coros
-    
+
     logger.info(f"Payment created {user}")
 
     # FIXME: Request to ORM to save payment_method, here we need user_token??
@@ -119,8 +120,16 @@ async def cancel_subscription(user: AuthorisedUserInfo = Depends(get_current_use
     # FIXME: Request to ORM to cancel subscription
 
     return billing.CancelSubscription(
-        user_id=user_id
+        user_id=user.id
     )
+
+
+@router.get('/get_subscription_plans_prices_and_ids')
+async def get_subscription_plans_prices_and_ids() -> list[SubscriptionPlanInfo]:
+    plans_info = await get_paid_subscription_plans_info()
+    print(len(plans_info))
+    assert len(plans_info) == 3, "Пока что должно быть только 3 тарифа!"
+    return plans_info
 
 # # NOTE: periodically check payment status
 # from yookassa import Payment, Configuration

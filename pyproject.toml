@@ -1,0 +1,16 @@
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.pylint]
+max-line-length = 120
+ignore = [".git"]
+good-names = ["i", "j", "k", "x", "Run", "_"]
+disable = [
+    "missing-module-docstring",         # "C0114"
+    "missing-class-docstring",          # "C0115"
+    "too-few-public-methods",           # "R0903"
+    "too-many-arguments",               # "R0913"
+    "too-few-public-methods",
+    "missing-module-docstring"
+]

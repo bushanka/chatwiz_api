@@ -32,11 +32,18 @@ services:
       - 443:443
     depends_on:
       - python_fastapi
-    
+
   rabbitmq:
     image: rabbitmq:3.12.4
     ports:
       - 5672:5672
 
-volumes:
-  nginx_volume:
+  db:
+    image: ankane/pgvector
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "11111111"
+      POSTGRES_EXTENSIONS: vector
+    ports:
+      - "${POSTGRES_PORT}:5432"

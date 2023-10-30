@@ -1,26 +1,25 @@
+import codecs
 import json
 from typing import Any
-from app.schemas.crud import apgvector_instance
-from langchain.chains import RetrievalQA
+
+import openai
 from langchain.chains import ConversationalRetrievalChain
 from langchain.chat_models import ChatOpenAI
-import json
-import codecs
-import logging
-import openai
+
+from app.schemas.crud import apgvector_instance
 
 
 async def mock_model_response(some_question: str) -> str:
     return f'The answer on "{some_question}" is : 42!'
 
 
-def convert_to_proper_chat_history(history):
+def convert_to_proper_chat_history(history) -> list[tuple[Any, Any]]:
     dict_history = json.loads(history)
     chat_history = dict_history['chat']
     # Формат подачи историй в лангчейне [(query, result["answer"])]
     converted_history = [
         (
-            codecs.escape_decode(chat_history[i][1])[0].decode('utf-8'), 
+            codecs.escape_decode(chat_history[i][1])[0].decode('utf-8'),
             codecs.escape_decode(chat_history[i + 1][1])[0].decode('utf-8')
         ) for i in range(0, len(chat_history) - 1, 2)
     ]
@@ -68,7 +67,7 @@ async def llm_model_response(user_question: str, message_history: str, context_n
             {"role": "user", "content": user_question}
         )
         chat_completion_resp = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo", 
+            model="gpt-3.5-turbo",
             messages=chat_history
         )
         return chat_completion_resp.choices[0].message.content
