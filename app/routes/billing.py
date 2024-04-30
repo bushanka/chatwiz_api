@@ -37,48 +37,34 @@ router = APIRouter(
     }
 )
 async def create_payment(
-        subscription_plan_id: int = Query(..., description='''
-    +----+---------------+-------+
-    | ID |     Name      | Price |
-    +----+---------------+-------+
-    |  2 |     Basic     |  300  |
-    |  3 |      Pro      |  800  |
-    |  7 | Basic_yearly  | 3510  |
-    |  8 |  Pro_yearly   | 8640  |
-    +----+---------------+-------+
-    '''),
+        subscription_plan_id: int,
         user: AuthorisedUserInfo = Depends(get_current_user),
 ) -> billing.CreatedPayment:
-    # FIXME: Request to db via ORM to get price
-
     subscription_plan = await get_subscription_plan_info(subscription_plan_id)
-    print(subscription_plan)
     value = subscription_plan.price
     description = 'Order 1'
 
     # Generate unique payment key
     indepotence_key = uuid.uuid4()
 
-    # Create payment
-    payment_coros = asyncio.to_thread(
-        Payment.create,
+    # Create payment async here???
+    payment = Payment.create(
         {
             "amount": {
                 "value": value,
                 "currency": "RUB"
             },
             "confirmation": {
-                "type": "embedded",
+                "type": "redirect",
+                "return_url": "https://chatwiz.ru/home"
             },
-            # TODO: Check what capture is
             "capture": True,
-            "description": description,
-            "save_payment_method": True
-        },
+            "description": description
+        }, 
         indepotence_key
     )
 
-    payment = await payment_coros
+    # payment = await payment_coros
 
     logger.info(f"Payment created {user}")
 
@@ -89,7 +75,7 @@ async def create_payment(
 
     return billing.CreatedPayment(
         indepotence_key=str(indepotence_key),
-        confirmation_token=payment.confirmation.confirmation_token
+        redirect_url=payment.confirmation.confirmation_url
     )
 
 

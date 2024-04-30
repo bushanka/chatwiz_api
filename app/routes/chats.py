@@ -3,14 +3,14 @@ import datetime
 import json
 import os
 import random
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, UploadFile, HTTPException
 from starlette import status
 from starlette.responses import JSONResponse
 
 from app.model_message_proccessing import get_new_message_history
-from app.models.chat import ChatInfo, ChatMessages, AllUserChats, ChatWithMessages
+from app.models.chat import ChatInfo, ChatMessages, AllUserChats, ChatWithMessages, ChatWithMessagesAndContextUrl
 from app.models.user import AuthorisedUserInfo
 from app.schemas.crud import (
     add_chat,
@@ -141,7 +141,7 @@ async def get_user_chats(user: AuthorisedUserInfo = Depends(get_current_user)) -
         },
     }
 )
-async def get_chat_info_by_id(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> ChatInfo:
+async def get_chat_info_by_id(chat_id: int, user: AuthorisedUserInfo = Depends(get_current_user)) -> Union[ChatWithMessagesAndContextUrl, ChatWithMessages]:
     if chat_id not in user.chat_ids:
         raise HTTPException(status_code=403, detail='Not current user chat')
     user_chatinfo = await get_chatinfo_by_chat_id(chat_id)

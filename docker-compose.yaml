@@ -12,6 +12,9 @@ services:
       APP_BROKER_URI: "amqp://rabbitmq"
     ports:
       - 8000:8000
+    build:
+      context: .
+      dockerfile: ./Dockerfile
 
   celery_worker:
     image: chatwiz_api
@@ -20,6 +23,9 @@ services:
           "celery", "-A", "app.llm.tasks.chatwiztasks", "worker", "-Q", "chatwiztasks_queue",
           "--loglevel=DEBUG", "--hostname=chatwiz", "--autoscale=2,1"
       ]
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     environment:
       APP_BROKER_URI: "amqp://rabbitmq"
     depends_on:
@@ -30,6 +36,9 @@ services:
     ports:
       - 80:80
       - 443:443
+    build:
+      context: ./nginx/
+      dockerfile: ./Dockerfile
     depends_on:
       - python_fastapi
 
@@ -38,12 +47,12 @@ services:
     ports:
       - 5672:5672
 
-  db:
-    image: ankane/pgvector
-    environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "11111111"
-      POSTGRES_EXTENSIONS: vector
-    ports:
-      - "${POSTGRES_PORT}:5432"
+  # db:
+  #   image: ankane/pgvector
+  #   environment:
+  #     POSTGRES_DB: "postgres"
+  #     POSTGRES_USER: "postgres"
+  #     POSTGRES_PASSWORD: "11111111"
+  #     POSTGRES_EXTENSIONS: vector
+  #   ports:
+  #     - "${POSTGRES_PORT}:5432"

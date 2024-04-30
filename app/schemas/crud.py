@@ -6,7 +6,9 @@ from pydantic import TypeAdapter
 from sqlalchemy import text, select, update, delete
 from sqlalchemy.sql import and_
 import datetime
-
+import sys
+import os
+sys.path.append(os.getcwd())
 from app.llm.apgvector import AsyncPgVector
 from app.models.chat import AllUserChats, ChatInfo, ChatWithMessagesAndContextUrl, ChatWithMessages, \
     ChatWithMessagesAndContextUrl
@@ -288,7 +290,7 @@ async def add_feedback(feedback: Feedback):
 
 if __name__ == '__main__':
     # pass
-    # import asyncio
+    import asyncio
 
     # from draft import asession_maker
 
@@ -296,6 +298,5 @@ if __name__ == '__main__':
     # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
     # qwer = asyncio.run(get_subscription_plan_info(1))
-    qwer = asyncio.run(get_paid_subscription_plans_info())
-
+    qwer = asyncio.run(get_chatinfo_by_chat_id(126))
     print(qwer)

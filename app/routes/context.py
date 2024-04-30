@@ -109,8 +109,6 @@ async def upload_file(file: UploadFile,
                                 ExtraArgs={'ContentType': 'application/pdf'}
                                 )
 
-    task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
-
     logger.info(type(file.file))
 
     result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
