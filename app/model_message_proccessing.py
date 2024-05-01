@@ -4,7 +4,8 @@ from typing import Any
 
 import openai
 from langchain.chains import ConversationalRetrievalChain
-from langchain.chat_models import ChatOpenAI
+# from langchain.chat_models import ChatOpenAI
+from langchain_community.llms import YandexGPT
 
 from app.schemas.crud import apgvector_instance
 
@@ -45,7 +46,10 @@ async def llm_model_response(user_question: str, message_history: str, context_n
         user_question = codecs.escape_decode(user_question)[0].decode('utf-8')
         retriever = apgvector_instance.as_retriever(name_search_collection=context_name, k=2)
         qa = ConversationalRetrievalChain.from_llm(
-            llm=ChatOpenAI(temperature=0.5, model='gpt-3.5-turbo'),
+            llm=YandexGPT(
+                api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2",
+                folder_id="b1gv3u11tm89ukr82s0m"
+            ),
             chain_type="stuff",
             retriever=retriever,
             verbose=True
@@ -54,7 +58,7 @@ async def llm_model_response(user_question: str, message_history: str, context_n
         # FIXME: Возвращать сурсы через return_source_documents=True в ConversationalRetrievalChain
         # TODO: По хорошему поиграть с параметрами лангчейна, иногда модель отвечает на английском и плохо, не улавливает прошлые сообщения
         chat_history = convert_to_proper_chat_history(message_history)
-        result = await qa.arun({
+        result = qa.run({
             "question": user_question,
             "chat_history": chat_history
         })

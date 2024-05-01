@@ -5,6 +5,8 @@ boto3==1.28.17
 celery==5.3.4
 fastapi==0.103.0
 langchain==0.0.288
+langchain-community
+langchain-core
 openai==0.28.0
 pgvector==0.2.2
 psycopg2==2.9.7
@@ -28,3 +30,4 @@ openai
 tiktoken
 email_validator
 psycopg2-binary
+yandexcloud
