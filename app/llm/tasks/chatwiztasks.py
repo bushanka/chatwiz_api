@@ -74,7 +74,7 @@ session = boto3.Session(
     aws_secret_access_key=os.getenv('BUCKET_SECRET_ACCESS_KEY')
 )
 
-BUCKET_NAME = os.getenv('BUCKET_NAME')
+BUCKET_NAME = os.getenv('BUCKET_NAME_YANDEX_NAME')
 
 
 @app.task(name='llm.tasks.process_pdf')
@@ -102,7 +102,7 @@ def process_pdf(filename, user_id):
     # FIXME: Uncomment on prod
 
     # print('perfoming tokenization')
-    batchsize = 5000
+    batchsize = 2
     for i in range(0, len(docs), batchsize):
         PGVector.from_documents(
             embedding=YandexGPTEmbeddings(api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2", folder_id="b1gv3u11tm89ukr82s0m"),

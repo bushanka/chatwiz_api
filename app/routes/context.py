@@ -104,7 +104,7 @@ async def upload_file(file: UploadFile,
 
     async with session.client(service_name='s3', endpoint_url='https://storage.yandexcloud.net') as s3:
         await s3.upload_fileobj(file.file,
-                                os.getenv('BUCKET_NAME'),
+                                os.getenv('BUCKET_NAME_YANDEX_NAME'),
                                 str(user.id) + '-' + file.filename,
                                 ExtraArgs={'ContentType': 'application/pdf'}
                                 )
