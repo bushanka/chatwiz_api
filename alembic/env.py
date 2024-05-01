@@ -11,13 +11,13 @@ from alembic import context
 config = context.config
 
 # os.environ['db_user'] = 'some_user'
-os.environ['db_user'] = 'postgres'
+os.environ['db_user'] = 'main_user'
 # os.environ['db_password'] = '111'
-os.environ['db_password'] = '11111111'
+os.environ['db_password'] = '371RmUhv.%%B$'
 # os.environ['db_host'] = 'host.docker.internal'
-os.environ['db_host'] = '51.250.50.13'
+os.environ['db_host'] = '62.84.116.223'
 # os.environ['db_name'] = 'linkup'
-os.environ['db_name'] = 'postgres'
+os.environ['db_name'] = 'chatwiz_db'
 conn_url = f'postgresql+psycopg2://{os.environ["db_user"]}:{os.environ["db_password"]}@{os.environ["db_host"]}/{os.environ["db_name"]}'
 
 config.set_main_option('sqlalchemy.url', conn_url)

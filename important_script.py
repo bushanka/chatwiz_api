@@ -15,7 +15,6 @@ connect_str = f"postgresql+psycopg2://{args['user']}:{args['password']}@{args['h
 
 from langchain.vectorstores.pgvector import DistanceStrategy, PGVector
 from langchain.docstore.document import Document
-from langchain.embeddings import OpenAIEmbeddings
 from langchain_community.embeddings.yandex import YandexGPTEmbeddings
 
 embeddings = YandexGPTEmbeddings(api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2", folder_id="b1gv3u11tm89ukr82s0m")
