@@ -228,7 +228,7 @@ async def get_chatinfo_by_chat_id(chat_id: int):
                 message_history=res.message_history,
                 context_type=context.type,
                 creation_date=str(res.creation_date),
-                context_url='https://viewer.lovelogo.ru/' + context.name,
+                context_url='https://viewer.chatwiz.ru/' + context.name,
 
             )
 
