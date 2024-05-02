@@ -16,7 +16,7 @@ class ChatWithMessages(ChatInfo):
 
 
 class ChatWithMessagesAndContextUrl(ChatWithMessages):
-    context_url: str
+    url: str
 
 
 class AllUserChats(BaseModel):
