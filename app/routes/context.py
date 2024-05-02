@@ -41,7 +41,7 @@ router = APIRouter(
 # FIXME: Как нормально выйти из while-true ?
 async def celery_async_wrapper(app, task_name, task_args, queue):
     delay = 0.1
-    max_tries = 20
+    max_tries = 40
 
     task_id = app.send_task(task_name, [*task_args], queue=queue)
     task = AsyncResult(task_id)

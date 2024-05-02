@@ -2,10 +2,11 @@ import codecs
 import json
 from typing import Any
 
-import openai
-from langchain.chains import ConversationalRetrievalChain
-# from langchain.chat_models import ChatOpenAI
 from langchain_community.llms import YandexGPT
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.runnables import RunnableParallel, RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from langchain.callbacks.tracers import ConsoleCallbackHandler
 
 from app.schemas.crud import apgvector_instance
 
@@ -40,28 +41,32 @@ def convert_to_proper_chat_history_no_retriever(history):
     ]
     return converted_history
 
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
 
 async def llm_model_response(user_question: str, message_history: str, context_name: str) -> str:
     if context_name:
+        template = """Ответь на вопрос, основываясь только на следующем контексте:
+        {context}
+
+        Вопрос: {question}
+        """
+        model = YandexGPT(api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2", folder_id="b1gv3u11tm89ukr82s0m")
+        prompt = ChatPromptTemplate.from_template(template)
+        output_parser = StrOutputParser()
+
         user_question = codecs.escape_decode(user_question)[0].decode('utf-8')
+
         retriever = apgvector_instance.as_retriever(name_search_collection=context_name, k=2)
-        qa = ConversationalRetrievalChain.from_llm(
-            llm=YandexGPT(
-                api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2",
-                folder_id="b1gv3u11tm89ukr82s0m"
-            ),
-            chain_type="stuff",
-            retriever=retriever,
-            verbose=True
+        setup_and_retrieval = RunnableParallel(
+            {"context": retriever | format_docs, "question": RunnablePassthrough()}
         )
-        # FIXME: Сделать конфиги, там очень много настроек в лангчейне, вплоть до промпта и тд
-        # FIXME: Возвращать сурсы через return_source_documents=True в ConversationalRetrievalChain
-        # TODO: По хорошему поиграть с параметрами лангчейна, иногда модель отвечает на английском и плохо, не улавливает прошлые сообщения
-        chat_history = convert_to_proper_chat_history(message_history)
-        result = qa.run({
-            "question": user_question,
-            "chat_history": chat_history
-        })
+
+        chain = setup_and_retrieval | prompt | model | output_parser
+
+        result = await chain.ainvoke(user_question, config={'callbacks': [ConsoleCallbackHandler()]})
+        # chat_history = convert_to_proper_chat_history(message_history)
+
         result = codecs.escape_decode(result)[0].decode('utf-8')
         return result
     else:
