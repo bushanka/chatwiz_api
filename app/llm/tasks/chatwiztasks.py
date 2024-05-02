@@ -74,7 +74,7 @@ session = boto3.Session(
     aws_secret_access_key=os.getenv('BUCKET_SECRET_ACCESS_KEY')
 )
 
-BUCKET_NAME = os.getenv('BUCKET_NAME_YANDEX_NAME')
+BUCKET_NAME = os.getenv('BUCKET_NAME')
 
 
 @app.task(name='llm.tasks.process_pdf')
