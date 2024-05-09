@@ -1,24 +1,23 @@
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.docstore.document import Document
-from langchain.vectorstores.base import VectorStore, VectorStoreRetriever
-from langchain.embeddings.base import Embeddings
-
+import json
 from typing import (
-    TYPE_CHECKING,
     Any,
     Iterable,
-    List,
     Optional,
     Type,
     TypeVar,
 )
+from typing import List
 
 import asyncpg
-from pgvector.asyncpg import register_vector
 import numpy as np
-from typing import List
-import json
 from dotenv import load_dotenv
+from langchain.docstore.document import Document
+from langchain.embeddings.base import Embeddings
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.vectorstores.base import VectorStore, VectorStoreRetriever
+from pgvector.asyncpg import register_vector
+from langchain_community.embeddings.yandex import YandexGPTEmbeddings
+
 
 load_dotenv()
 
@@ -44,7 +43,7 @@ class AsyncPgVector(VectorStore):
             user,
             password,
             database,
-            embedding_function: Optional[Embeddings] = OpenAIEmbeddings(),
+            embedding_function: Optional[Embeddings] = YandexGPTEmbeddings(api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2", folder_id="b1gv3u11tm89ukr82s0m"),
             collection_name: str = _LANGCHAIN_DEFAULT_COLLECTION_NAME
     ):
         self._connection_pool = None

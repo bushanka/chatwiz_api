@@ -1,6 +1,5 @@
 # Схемы данных для запросов и ответов API
 from pydantic import BaseModel
-from typing import List
 
 
 class AuthorisedUserInfo(BaseModel):

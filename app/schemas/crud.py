@@ -2,12 +2,16 @@ import asyncio
 import os
 from typing import Any, Dict
 
+from pydantic import TypeAdapter
 from sqlalchemy import text, select, update, delete
 from sqlalchemy.sql import and_
 import datetime
-
+import sys
+import os
+sys.path.append(os.getcwd())
 from app.llm.apgvector import AsyncPgVector
-from app.models.chat import AllUserChats, ChatPdfInfo, ChatInfoIdName
+from app.models.chat import AllUserChats, ChatInfo, ChatWithMessagesAndContextUrl, ChatWithMessages, \
+    ChatWithMessagesAndContextUrl
 from app.models.context import ContextInfo, UserContextsInfo
 from app.models.subscription_plan import SubscriptionPlanInfo
 from app.models.user import AuthorisedUserInfo
@@ -98,8 +102,17 @@ async def get_subscription_plan_info(subscription_plan: int) -> SubscriptionPlan
                                     max_context_amount=res.max_context_amount,
                                     name=res.name,
                                     max_context_size=res.max_context_size,
-                                    max_question_length=res.max_question_length
+                                    max_question_length=res.max_question_length,
+                                    max_action_points=res.max_action_points,
                                     )
+
+
+async def get_paid_subscription_plans_info() -> list[SubscriptionPlanInfo]:
+    async with asession_maker() as session:
+        stmt = select(SubscriptionTable).where(SubscriptionTable.id != 1)  # id=1 - free plan
+        res = await session.scalars(stmt)
+        res = res.fetchall()
+        return TypeAdapter(list[SubscriptionPlanInfo]).validate_python(res)
 
 
 async def add_context(context: Context) -> Context:
@@ -132,7 +145,7 @@ async def get_chat_message_history_by_chat_id(chat_id: int):
         return res
 
 
-async def get_user_context_by_id_from_db(context_id: int, user_id: int):
+async def get_user_context_by_id_from_db(context_id: int, user_id: int) -> ContextInfo:
     async with asession_maker() as session:
         stmt = select(Context).where(and_(Context.user_id == user_id, Context.id == context_id))
         res = await session.execute(stmt)
@@ -150,7 +163,8 @@ async def get_user_context_by_id_from_db(context_id: int, user_id: int):
             path=res.path,
             # + 3 hours = Moscow time
             creation_date=datetime.datetime.strftime(
-                res.creation_date + datetime.timedelta(hours=3),  # TODO это плохо, юзер может быть не из мск
+                res.creation_date + datetime.timedelta(hours=3),
+                # TODO это плохо, юзер может быть не из мск (это дефолтное значение к тому же)
                 "%d %b %Y %H:%M"
             )
         )
@@ -197,33 +211,43 @@ async def get_chatinfo_by_chat_id(chat_id: int):
         stmt = select(Chat).where(Chat.id == chat_id)
         res = await session.execute(stmt)
         res = res.first()[0]
-        cntx_id, msg_history, chat_name = res.context_id, res.message_history, res.name
+        stmt = select(Context).where(Context.id == res.context_id)
+        context = await session.scalar(stmt)
 
-        stmt = select(Context.name).where(Context.id == cntx_id)
-        cntx_name = await session.scalar(stmt)
+        if context is None:
+            return ChatWithMessages(
+                chat_id=chat_id,
+                chat_name=res.name,
+                message_history=res.message_history,
+                creation_date=str(res.creation_date)
+            )
+        else:
+            return ChatWithMessagesAndContextUrl(
+                chat_id=chat_id,
+                chat_name=res.name,
+                message_history=res.message_history,
+                context_type=context.type,
+                creation_date=str(res.creation_date),
+                url='https://viewer.chatwiz.ru/' + context.name,
 
-        return ChatPdfInfo(
-            message_history=msg_history,
-            url='https://viewer.lovelogo.ru/' + cntx_name,
-            chat_name=chat_name
-        )
+            )
 
 
-async def get_user_chats_from_db(user_id: int):
+async def get_user_chats_from_db(user_id: int) -> AllUserChats:
     async with asession_maker() as session:
         stmt = select(Chat).where(Chat.user_id == user_id)
         res = await session.execute(stmt)
         res = res.fetchall()
         return AllUserChats(
             chats=[
-                ChatInfoIdName(
-                    id=el[0].id,
-                    name=el[0].name,
-                    # + 3 hours = Moscow time
+                ChatInfo(
+                    chat_id=el[0].id,
+                    chat_name=el[0].name,
                     creation_date=datetime.datetime.strftime(
-                        el[0].creation_date + datetime.timedelta(hours=3),
+                        el[0].creation_date + datetime.timedelta(hours=3),  # todo это плохо, юзер может быть не из мс
                         "%d %b %Y %H:%M"
-                    )
+                    ),
+                    context_type='pdf',  # todo подумать, как сюда по-умному прокидывать(надо ли)
                 ) for el in res
             ]
         )
@@ -266,13 +290,13 @@ async def add_feedback(feedback: Feedback):
 
 if __name__ == '__main__':
     # pass
-    # import asyncio
+    import asyncio
 
-    from draft import asession_maker
+    # from draft import asession_maker
 
     #
     # asm = get_sessionmaker()
     # asyncio.run(update_chat(1, {'message_history': json.dumps(["system", "You are a helpful AI bot."])}))
-    qwer = asyncio.run(get_user_info('111'))
-
+    # qwer = asyncio.run(get_subscription_plan_info(1))
+    qwer = asyncio.run(get_chatinfo_by_chat_id(126))
     print(qwer)

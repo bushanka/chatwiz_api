@@ -42,6 +42,7 @@ app.include_router(feedback.router, dependencies=[Depends(get_current_user)])
 
 @app.on_event("startup")
 async def startup():
+    print("HELLO BLYAT")
     await apgvector_instance.connect()
     # gunicorn_logger = logging.getLogger('gunicorn.error')
     # logger = logging.getLogger("uvicorn")

@@ -4,7 +4,7 @@ from typing import List
 
 class CreatedPayment(BaseModel):
     indepotence_key: str
-    confirmation_token: str
+    redirect_url: str
 
 class CancelSubscription(BaseModel):
     user_id: str

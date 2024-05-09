@@ -4,17 +4,15 @@
 
 import logging
 
+from email_validator import validate_email, EmailNotValidError
 from fastapi import APIRouter, status, HTTPException
 from pydantic import BaseModel
-from starlette.responses import JSONResponse
 
 from app.jwt_manager import JWTManager
 from app.password_hashing import password_encoder
 from app.schemas.crud import email_exists, add_user
 from app.schemas.db_schemas import User as UserTable
 from app.status_messages import StatusMessage
-
-from email_validator import validate_email, EmailNotValidError
 
 logger = logging.getLogger("uvicorn")
 
@@ -50,7 +48,7 @@ async def register_user(email: str,
     try:
         email = validate_email(email).ascii_email
     except EmailNotValidError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=422, detail=str(e))
     new_user = UserTable(
         email=email,
         hashed_password=await password_encoder(password),

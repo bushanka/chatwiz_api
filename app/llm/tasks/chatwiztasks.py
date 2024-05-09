@@ -1,6 +1,5 @@
 import io
 import os
-import time
 from typing import List, Optional
 
 import boto3
@@ -9,9 +8,11 @@ from celery import Celery
 from dotenv import load_dotenv
 from langchain.docstore.document import Document
 from langchain.document_loaders.base import BaseLoader
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain_community.embeddings.yandex import YandexGPTEmbeddings
+
 from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
 from langchain.vectorstores.pgvector import PGVector
-from langchain.embeddings.openai import OpenAIEmbeddings
 
 
 class PyPDFBytesLoader(BaseLoader):
@@ -101,14 +102,14 @@ def process_pdf(filename, user_id):
     # FIXME: Uncomment on prod
 
     # print('perfoming tokenization')
-    batchsize = 5000
+    batchsize = 2
     for i in range(0, len(docs), batchsize):
         PGVector.from_documents(
-            embedding=OpenAIEmbeddings(),
-            documents=docs[i:i+batchsize],
+            embedding=YandexGPTEmbeddings(api_key="AQVNy4GILx-3sPg3cgHIGz629H3qGqF4fsm4son2", folder_id="b1gv3u11tm89ukr82s0m"),
+            documents=docs[i:i + batchsize],
             collection_name=normalized_filename,
             connection_string=CONNECTION_STRING,
-            )
+        )
     # print('done')
 
     # For test, simulates embedding docs

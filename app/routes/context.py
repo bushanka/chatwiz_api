@@ -41,7 +41,7 @@ router = APIRouter(
 # FIXME: Как нормально выйти из while-true ?
 async def celery_async_wrapper(app, task_name, task_args, queue):
     delay = 0.1
-    max_tries = 20
+    max_tries = 40
 
     task_id = app.send_task(task_name, [*task_args], queue=queue)
     task = AsyncResult(task_id)
@@ -60,22 +60,22 @@ async def celery_async_wrapper(app, task_name, task_args, queue):
     return 'OK'
 
 
-# @router.post(
-#     "/uploadfile/",
-#     responses={
-#         status.HTTP_200_OK: {
-#             "description": "Return OK if upload is successful"
-#         },
-#         status.HTTP_400_BAD_REQUEST: {
-#             "description": "Bad file given"
-#         },
-#         status.HTTP_504_GATEWAY_TIMEOUT: {
-#             "description": "File was not downloaded within the allotted time"
-#         }
-#     }
-# )
-async def create_upload_file(file: UploadFile,
-                             user: AuthorisedUserInfo = Depends(get_current_user)) -> JSONResponse:
+@router.post(
+    "/uploadfile/",
+    responses={
+        status.HTTP_200_OK: {
+            "description": "Return OK if upload is successful"
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            "description": "Bad file given"
+        },
+        status.HTTP_504_GATEWAY_TIMEOUT: {
+            "description": "File was not downloaded within the allotted time"
+        }
+    }
+)
+async def upload_file(file: UploadFile,
+                      user: AuthorisedUserInfo = Depends(get_current_user)) -> ContextInfo:
     # Get the file size (in bytes)
     if user.num_of_contexts >= user.max_context_size:
         raise HTTPException(status_code=400, detail="Max amount of contexts already reached")
@@ -109,17 +109,15 @@ async def create_upload_file(file: UploadFile,
                                 ExtraArgs={'ContentType': 'application/pdf'}
                                 )
 
-    # task_id = app.send_task('llm.tasks.process_pdf', (file.filename, user_id), queue='chatwiztasks_queue')
-
     logger.info(type(file.file))
 
-    # result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
-    result = 'OK'
+    result = await celery_async_wrapper(app, 'llm.tasks.process_pdf', (file.filename, user.id), 'chatwiztasks_queue')
+    # result = 'OK'
     if result == 'OK':
         context = Context(
             name=str(user.id) + '-' + file.filename,
             user_id=user.id,
-            type=content_type,
+            type=content_type[len('application/')::],
             size=file_size,
             path='https://' + os.getenv('BUCKET_NAME') + '/' + str(user.id) + '-' + file.filename
         )
@@ -128,7 +126,15 @@ async def create_upload_file(file: UploadFile,
                           new_values={'action_points_used': user.action_points_used + int(os.getenv('FILE_UPLOAD'))})
         context_added = await add_context(context)
 
-        return context_added.id
+        return ContextInfo(
+            id=context_added.id,
+            name=context_added.name,
+            user_id=context_added.user_id,
+            type=context_added.type,
+            size=context_added.size,
+            path=context_added.path,
+            creation_date=str(context_added.creation_date)
+        )
 
     else:
         raise HTTPException(status_code=408, detail="Time out")
@@ -202,4 +208,3 @@ async def delete_context_handle(context_id: int, user: AuthorisedUserInfo = Depe
                                Bucket=os.getenv('BUCKET_NAME'),
                                )
     return JSONResponse(status_code=200, content=StatusMessage.context_deleted.value)
-    # todo удалять файл из хранилища
